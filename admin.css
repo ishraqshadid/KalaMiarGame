@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap');
+
+body {
+    background: #121212;
+    color: white;
+    font-family: 'Hind Siliguri', sans-serif;
+    margin: 0; padding: 20px;
+}
+
+.admin-container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: #1e1e1e;
+    padding: 20px;
+    border-radius: 15px;
+    border: 2px solid #FF5252;
+    box-shadow: 0 0 20px rgba(255, 82, 82, 0.2);
+}
+
+.header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px;
+}
+
+.back-btn {
+    background: #444; color: white; border: none; padding: 8px 15px;
+    border-radius: 5px; cursor: pointer; font-size: 14px;
+}
+
+.user-row {
+    background: #252525;
+    padding: 15px; margin-bottom: 10px;
+    border-radius: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-left: 4px solid #00E676;
+}
+
+.info h3 { margin: 0; font-size: 18px; }
+.info p { margin: 5px 0 0; color: #FFD700; font-size: 14px; }
+
+.actions { display: flex; gap: 10px; }
+
+button.act-btn {
+    padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
+}
+.edit { background: #2196F3; color: white; }
+.del { background: #F44336; color: white; }

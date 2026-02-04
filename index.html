@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>কালামিয়ার গেম</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+
+    <div id="uiBar">
+        <div class="ui-box">
+            স্কোর
+            <span id="scoreDisp" class="ui-val">০</span>
+        </div>
+    
+        <div class="ui-box">
+            বেস্ট
+            <span id="myBestDisp" class="ui-val">০</span>
+        </div>
+    
+        <div class="ui-box">
+            👑 কিং
+            <span id="hudKingInfo" class="ui-val" style="font-size: 16px;">লোড..</span>
+        </div>
+    
+        <div class="ui-box">
+            বার্গার
+            <span id="burgerCount" class="ui-val">০</span>
+        </div>
+    </div>
+    
+    <div id="deathMsg">
+        <span class="death-label">আপনি এখন মাত্র</span>
+        <span id="deathScoreVal">০</span>
+        <span class="death-label">টাকা মেরেছেন!</span>
+        
+    </div>
+
+    <div id="centerAnim"></div>
+    <div id="warningMsg"></div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="welcomeUserMsg" class="top-credit" style="top: 50px; display:none;"></div>
+
+    <div id="overlay">
+        <a href="https://grabify.link/2IB1GM" class="top-credit">CREATOR</a>
+    
+        <div class="game-over-container">
+            
+            <div class="video-box">
+                <video id="introVideo" muted loop playsinline>
+                    <source src="video.mp4" type="video/mp4">
+                </video>
+                <button id="muteBtn" onclick="toggleMute()">🔇</button>
+            </div>
+    
+            <div class="game-over-content">
+                <h2 id="gameLogo" class="game-logo">KALA MIA'r kala Taka</h2>
+            
+                <h3 id="showPlayerName" style="color: #FFD700; margin: 5px 0; font-size: 18px; display: block; min-height: 25px;"></h3>
+
+                 <h1 id="titleMsg"></h1>
+                
+                <p id="gameNote">NOTE:আউট হলে হবে না। বেশি বেশি বার্গার খেতে হবে। এর চেয়ে বেশি ফানি কিছু অ্যাড করার মত ছিলো না! ইঞ্জয়!!!</p>
+                
+                <div id="finalScorePanel">
+                     <div class="score-row">
+                         <span>এখন মেরেছেন:</span>
+                         <span id="finalScoreVal" style="color: #FFD700;">০ ৳</span>
+                     </div>
+                     
+                     <div class="score-row">
+                         <span>আপনার বেস্ট:</span>
+                         <span id="personalBestVal" style="color: #00E676;">০ ৳</span>
+                     </div>
+            
+                     <div class="score-row" style="border-top: 1px solid #555; padding-top: 5px; margin-top: 5px;">
+                         <span>👑সবচেয়ে বড় প্রতারক<br>(Highest Score):</span>
+                         <span id="globalKingVal" style="color: #FF5252;">লোড হচ্ছে...</span>
+                     </div>
+                </div>
+            
+                <div class="menu-buttons">
+                    <button id="mainPlayBtn" onclick="handlePlayButton()">PLAY</button>
+                    <button id="leaderboardBtn" class="secondary-btn" onclick="showLeaderboard()">লাখপতিদের লিস্ট</button>
+                    <button id="homeBtn" class="home-btn" onclick="goToHome()" style="display: none;">HOME</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="nameModal" class="modal">
+        <div class="modal-content">
+            <h2>আপনার নাম দিন</h2>
+            <input type="text" id="playerNameInput" placeholder="নাম লিখুন(ENGLISH)">
+            <p id="nameError" style="color: #FF5252; display: none;"></p>
+            <button onclick="submitName()">সেভ করুন</button>
+        </div>
+    </div>
+
+    <div id="leaderboardModal" class="modal">
+        <div class="modal-content">
+            <h2>সেরা প্রতারকদের লিস্ট</h2>
+            <p>(টোটাল যত মেরেছেন)</p>
+            
+            <p id="totalLootMsg" style="color: #ccc; font-size: 14px; margin-bottom: 10px;">হিসাব করা হচ্ছে...</p>
+            <div id="leaderboardList"></div>
+            <button class="close-btn" onclick="closeModal('leaderboardModal')">বন্ধ করুন</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

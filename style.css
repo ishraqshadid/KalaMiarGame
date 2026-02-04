@@ -1,0 +1,365 @@
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap');
+
+* { 
+    box-sizing: border-box; 
+    -webkit-tap-highlight-color: transparent; 
+    user-select: none; 
+    outline: none; 
+}
+
+/* ===========================
+   CORE LAYOUT FIXES (NO ZOOM)
+   =========================== */
+html, body { 
+    margin: 0; 
+    padding: 0; 
+    background: #222; 
+    width: 100%; 
+    height: 100%;
+    overflow: hidden; /* স্ক্রল বন্ধ */
+    position: fixed; /* পেজ নড়াচড়া করবে না */
+    font-family: 'Hind Siliguri', sans-serif;
+    
+    /* মোবাইল জুম এবং বাউন্স ফিক্স */
+    touch-action: none; 
+    -ms-touch-action: none;
+    overscroll-behavior: none;
+}
+
+canvas { 
+    display: block; 
+    width: 100%; 
+    height: 100%;
+    position: absolute; 
+    top: 0; left: 0;
+    z-index: 1;
+}
+
+/* ===========================
+   UI BAR & ANIMATIONS 
+   =========================== */
+   #uiBar {
+    position: absolute; top: 0; left: 0; width: 100%; height: 70px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0));
+    display: flex; 
+    justify-content: space-evenly; /* সমান দূরত্ব */
+    align-items: flex-start;
+    color: white; z-index: 10; padding-top: 10px;
+    pointer-events: none;
+}
+
+
+.ui-box { 
+    text-align: center; 
+    font-size: 14px; 
+    font-weight: 600; 
+    text-shadow: 1px 1px 2px black;
+    min-width: 60px;
+}
+
+.ui-val { 
+    font-size: 20px; 
+    color: #FFD700; 
+    display: block; 
+    margin-top: 2px;
+    font-weight: bold;
+}
+
+/* ANIMATIONS */
+#centerAnim {
+    position: absolute; top: 30%; left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-size: clamp(30px, 8vw, 50px); font-weight: 800; color: #00E676;
+    text-shadow: 2px 2px 0 #000; pointer-events: none; z-index: 15;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#warningMsg {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    max-width: 90vw; width: auto; padding: 10px; font-size: clamp(20px, 6vw, 30px);
+    font-weight: bold; color: #FFF9C4; text-shadow: 1px 1px 4px #000;
+    display: none; pointer-events: none; z-index: 12; text-align: center;
+    animation: pulse 1s infinite;
+}
+@keyframes pulse { 0% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1); } }
+
+/* ===========================
+   DEATH MESSAGE (ভেসে আসা স্কোর)
+   =========================== */
+   #deathMsg {
+    position: absolute;
+    top: 40%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    
+    /* সুন্দর গ্লাস ইফেক্ট ডিজাইন */
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid #FFD700;
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.5);
+    padding: 20px 50px;
+    border-radius: 15px;
+    text-align: center;
+    
+    display: none; /* শুরুতে হাইড */
+    z-index: 100;
+    opacity: 0;
+}
+
+.death-label {
+    display: block;
+    color: #ccc;
+    font-size: 14px;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#deathScoreVal {
+    display: block;
+    font-size: 45px;
+    font-weight: 900;
+    color: #FFD700;
+    text-shadow: 2px 2px 0 #000;
+}
+
+/* স্লাইড এনিমেশন */
+.slide-down-anim {
+    animation: popInDrop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popInDrop {
+    0% { top: 10%; opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    60% { transform: translate(-50%, -50%) scale(1.1); }
+    100% { top: 40%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* ===========================
+   MUTE BUTTON
+   =========================== */
+#muteBtn {
+    position: absolute; bottom: 10px; right: 10px;
+    background: rgba(0, 0, 0, 0.6); border: 2px solid #FFD700;
+    border-radius: 50%; width: 40px; height: 40px;
+    font-size: 20px; color: white; cursor: pointer;
+    display: flex; justify-content: center; align-items: center;
+    z-index: 50; padding: 0; box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+/* হোম বাটনের স্টাইল */
+.home-btn {
+    background-color: #2196F3; /* নীল কালার */
+    color: white;
+    margin-top: 10px; /* একটু ফাঁকা থাকবে */
+    border: none;
+    padding: 10px 20px;
+  
+    cursor: pointer;
+    font-weight: bold;
+    width: 100%; /* পুরো জায়গা নিবে, চাইলে কমাতে পারেন */
+}
+
+.home-btn:hover {
+    background-color: #1976D2; /* হোভার করলে গাঢ় নীল */
+}
+
+/* ===========================
+   LEADERBOARD MODAL
+   =========================== */
+.modal {
+    display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.95); backdrop-filter: blur(5px);
+    justify-content: center; align-items: center;
+    overscroll-behavior: contain;
+}
+
+.modal-content {
+    background: linear-gradient(135deg, #1a1a1a, #2c3e50);
+    border: 2px solid #00E676; border-radius: 15px;
+    padding: 20px;
+    width: 90%; max-width: 500px;
+    height: 85vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 0 40px rgba(0, 230, 118, 0.2);
+    text-align: center; color: white;
+}
+
+.modal-content h2 { margin: 0 0 10px 0; color: #00E676; border-bottom: 1px solid #444; padding-bottom: 10px; flex-shrink: 0; }
+.modal-content input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; font-size: 18px; text-align: center; background: #eee; flex-shrink: 0; }
+
+#leaderboardList {
+    flex-grow: 1; overflow-y: auto; margin-bottom: 10px; text-align: left; padding-right: 5px;
+    display: grid; grid-template-columns: 1fr; gap: 8px;
+    overscroll-behavior: contain;
+}
+
+#leaderboardList::-webkit-scrollbar { width: 5px; }
+#leaderboardList::-webkit-scrollbar-thumb { background: #00E676; border-radius: 10px; }
+
+.rank-item {
+    background: rgba(255, 255, 255, 0.08); padding: 12px 15px;
+    border-radius: 8px; display: flex; justify-content: space-between; align-items: center;
+    font-size: 16px;
+}
+.rank-item span:last-child { color: #FFD700; font-weight: bold; }
+.rank-item.highlight { border: 1px solid #00E676; background: rgba(0, 230, 118, 0.15); }
+
+.close-btn {
+    background: #d32f2f; padding: 10px 20px; font-size: 16px; margin-top: auto; 
+    border-radius: 50px; border: none; color: white; cursor: pointer; width: 100%; flex-shrink: 0;
+}
+
+/* ===========================
+   GAME OVER LAYOUT (FIXED)
+   =========================== */
+#overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.95); 
+    display: flex; justify-content: center; align-items: center;
+    z-index: 20; color: white;
+    touch-action: none;
+}
+
+.top-credit {
+    position: absolute; top: 15px; right: 15px; font-size: 12px;
+    color: #00E676; text-decoration: none; z-index: 30; font-weight: bold;
+    background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 20px; border: 1px solid #00E676;
+}
+
+.game-over-container {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    width: 100%; height: 100%; padding: 20px;
+}
+
+.video-box {
+    width: 90%; max-width: 450px; 
+    max-height: 40vh; 
+    aspect-ratio: 16/12;
+    border-radius: 15px; overflow: hidden; border: 3px solid #FFD700;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); background: #000;
+    margin-bottom: 15px; position: relative; flex-shrink: 0;
+}
+video { width: 100%; height: 100%; object-fit: cover; }
+
+.game-over-content {
+    display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%;
+}
+
+h1 { margin: 0 0 10px 0; font-size: clamp(28px, 6vw, 36px); color: #FFD700; text-shadow: 2px 2px 4px #000; }
+
+.user-note { display: none; } 
+
+#finalScorePanel {
+    display: none; 
+    background: rgba(0, 0, 0, 0.5); 
+    border: 2px solid #FFD700;
+    padding: 15px 25px; 
+    border-radius: 12px; 
+    margin-bottom: 20px; 
+    min-width: 220px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.score-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 18px;
+    color: white;
+    font-weight: bold;
+    gap: 15px;
+}
+#finalScoreVal { font-size: 28px; color: #FFD700; font-weight: bold; display: block; }
+#finalScoreText { font-size: 14px; color: #ccc; }
+
+.menu-buttons { display: flex; flex-direction: column; gap: 10px; width: 100%; align-items: center; }
+button { 
+    padding: 10px 30px; font-size: 18px; font-weight: bold; cursor: pointer;
+    background: linear-gradient(45deg, #FF512F, #DD2476); color: white;
+    border: none; border-radius: 50px; 
+    box-shadow: 0 4px 15px rgba(221, 36, 118, 0.5); width: 80%; max-width: 250px;
+}
+.secondary-btn { background: linear-gradient(45deg, #2193b0, #6dd5ed); box-shadow: 0 4px 15px rgba(33, 147, 176, 0.5); }
+/* গেমের নাম (লোগো স্টাইল) */
+.game-logo {
+    margin: 5px 0;
+    font-size: 24px;
+    font-weight: bold;
+    color: #00E676; /* সুন্দর সবুজ কালার */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(0, 230, 118, 0.4);
+}
+
+/* টাইটেল মেসেজ (স্বাগতম / গেম ওভার) */
+/* স্বাগতম মেসেজের স্টাইল */
+#titleMsg {
+    font-size: 20px !important;  /* ফন্ট সাইজ ছোট করা হলো (আগে অনেক বড় ছিল) */
+    margin: 5px 0 !important;    /* উপর-নিচের গ্যাপ কমানো হলো */
+    padding: 0 !important;       /* প্যাডিং একদম নাই */
+    color: #ffffff;              /* সাদা লেখা */
+    text-align: center;
+}
+/* ===========================
+   LANDSCAPE MODE FIXES
+   =========================== */
+/* ===========================
+   LANDSCAPE MODE FIXES (Leaderboard Zoom Out)
+   =========================== */
+   @media screen and (max-height: 500px) and (orientation: landscape) {
+    /* ১. UI বার ফিক্স */
+    #uiBar { 
+        height: 50px; padding-top: 5px; 
+        padding-left: 20px; padding-right: 20px;
+    }
+
+    /* ২. গেম ওভার কন্টেইনার */
+    .game-over-container {
+        flex-direction: row; gap: 20px; padding: 5px 30px;
+    }
+    .video-box { width: 40%; max-height: 75vh; margin-bottom: 0; }
+    .game-over-content { width: 55%; }
+    h1 { font-size: 22px; margin-bottom: 5px; }
+    #finalScorePanel { padding: 5px 10px; margin-bottom: 5px; }
+    .score-row { font-size: 14px; }
+    #finalScoreVal { font-size: 20px; }
+    
+    .menu-buttons { flex-direction: row; gap: 10px; }
+    button { padding: 5px 15px; font-size: 14px; }
+
+    /* ৩. লিডারবোর্ড (Zoom Out Fix) - আসল পরিবর্তন এখানে */
+    .modal-content { 
+        height: 95vh; /* প্রায় পুরো হাইট নেবে */
+        width: 80%; 
+        max-width: 650px;
+        padding: 10px; /* প্যাডিং কমানো হয়েছে */
+    }
+
+    .modal-content h2 { 
+        font-size: 18px; /* টাইটেল ছোট */
+        margin-bottom: 5px; padding-bottom: 5px;
+    }
+
+    /* প্যারাগ্রাফ ছোট করা */
+    #totalLootMsg {
+        font-size: 11px !important;
+        margin-bottom: 5px !important;
+    }
+
+    /* লিস্ট গ্রিড এবং ছোট করা */
+    #leaderboardList { 
+        grid-template-columns: 1fr 1fr; /* ২ কলাম */
+        gap: 6px; /* গ্যাপ কমানো */
+        padding-right: 5px;
+    }
+
+    /* প্রতিটা নাম বা র‍্যাংক আইটেম ছোট করা */
+    .rank-item {
+        padding: 4px 10px; /* প্যাডিং অনেক কমানো */
+        font-size: 12px; /* ফন্ট ছোট */
+        min-height: 25px;
+    }
+
+    /* ক্লোজ বাটন */
+    .close-btn { 
+        padding: 5px 15px; 
+        font-size: 12px; 
+        margin-top: 5px; 
+    }
+}
