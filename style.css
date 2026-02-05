@@ -7,9 +7,6 @@
     outline: none; 
 }
 
-/* ===========================
-   CORE LAYOUT FIXES
-   =========================== */
 html, body { 
     margin: 0; padding: 0; background: #222; 
     width: 100%; height: 100%; overflow: hidden; position: fixed; 
@@ -22,9 +19,6 @@ canvas {
     position: absolute; top: 0; left: 0; z-index: 1;
 }
 
-/* ===========================
-   RED CUSTOM ALERT BOX (NEW)
-   =========================== */
 #redAlertModal {
     display: none; position: fixed; z-index: 200; left: 0; top: 0; 
     width: 100%; height: 100%;
@@ -33,7 +27,7 @@ canvas {
 }
 
 .red-alert-box {
-    background: linear-gradient(135deg, #8B0000, #D32F2F); /* খতরা লাল কালার */
+    background: linear-gradient(135deg, #8B0000, #D32F2F); 
     border: 3px solid #FF5252;
     border-radius: 15px;
     padding: 25px;
@@ -78,9 +72,6 @@ canvas {
     100% { transform: scale(1) rotate(0deg); }
 }
 
-/* ===========================
-   UI BAR & ANIMATIONS 
-   =========================== */
 #uiBar {
     position: absolute; top: 0; left: 0; width: 100%; height: 70px;
     background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0));
@@ -98,11 +89,10 @@ canvas {
 
 #centerAnim {
     position: absolute; 
-    top: 30%; /* 30% এর বদলে 50% দিলে একদম মাঝখানে আসবে */
+    top: 50%; 
     left: 50%;
     transform: translate(-50%, -50%) scale(0);
     
-    /* ফন্ট সাইজ ছোট করা হয়েছে (আগে ছিল 30px-50px) */
     font-size: clamp(20px, 5vw, 35px); 
     
     font-weight: 800; 
@@ -122,9 +112,6 @@ canvas {
 }
 @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1); } }
 
-/* ===========================
-   DEATH MESSAGE
-   =========================== */
 #deathMsg {
     position: absolute; top: 40%; left: 50%;
     transform: translate(-50%, -50%) scale(0.5);
@@ -142,9 +129,6 @@ canvas {
     100% { top: 40%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
-/* ===========================
-   MUTE BUTTON
-   =========================== */
 #muteBtn {
     position: absolute; bottom: 10px; right: 10px;
     background: rgba(0, 0, 0, 0.6); border: 2px solid #FFD700;
@@ -160,9 +144,6 @@ canvas {
 }
 .home-btn:hover { background-color: #1976D2; }
 
-/* ===========================
-   LEADERBOARD & OVERLAYS
-   =========================== */
 .modal {
     display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%;
     background-color: rgba(0,0,0,0.95); backdrop-filter: blur(5px);
@@ -239,7 +220,6 @@ button {
 .game-logo { margin: 5px 0; font-size: 24px; font-weight: bold; color: #00E676; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 10px rgba(0, 230, 118, 0.4); }
 #titleMsg { font-size: 20px !important; margin: 5px 0 !important; padding: 0 !important; color: #ffffff; text-align: center; }
 
-/* LANDSCAPE FIXES */
 @media screen and (max-height: 500px) and (orientation: landscape) {
     #uiBar { height: 50px; padding-top: 5px; padding-left: 20px; padding-right: 20px; }
     .game-over-container { flex-direction: row; gap: 20px; padding: 5px 30px; }

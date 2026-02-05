@@ -1,6 +1,3 @@
-// ==========================================
-// ** 1. FIREBASE CONFIGURATION **
-// ==========================================
 const firebaseConfig = {
     apiKey: "AIzaSyC76uQ_D4GHJNxoPXd5xZYq19rTlsQMDF4",
     authDomain: "kalamiargame.firebaseapp.com",
@@ -12,15 +9,11 @@ const firebaseConfig = {
     measurementId: "G-QE45GK66KT"
 };
 
-// Firebase Initialize
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.database();
 
-// ==========================================
-// ** 2. LOGIN LOGIC **
-// ==========================================
 const ADMIN_PASS = "nahiAdmin"; 
 let allUsersData = []; 
 
@@ -35,9 +28,6 @@ function checkLogin() {
     }
 }
 
-// ==========================================
-// ** 3. DASHBOARD LOGIC (Load Users) **
-// ==========================================
 function loadAllUsers() {
     const listDiv = document.getElementById('userList');
     listDiv.innerHTML = "<p style='text-align:center;'>ডাটা লোড হচ্ছে...</p>";
@@ -82,7 +72,6 @@ function renderList(users) {
              statusHtml = `<span style="color: orange; font-size: 12px;">Last seen: ${mins}m ago</span>`;
         }
 
-        // Action Buttons: Added "Alert"
         div.innerHTML = `
             <div class="user-info">
                 <h3>${u.name} ${statusHtml}</h3>
@@ -99,18 +88,12 @@ function renderList(users) {
     });
 }
 
-// ==========================================
-// ** 4. EDIT, RENAME, ALERT & DELETE ACTIONS **
-// ==========================================
-
-// --- ১. কাস্টম অ্যালার্ট (NEW) ---
 function sendCustomAlert(name) {
     const msg = prompt(`'${name}' কে কি ওয়ার্নিং/মেসেজ দিতে চান?`);
     if(msg && msg.trim() !== "") {
-        // 'alerts' নোডে ডাটা পাঠানো হচ্ছে
         db.ref('alerts/' + name).set({
             message: msg,
-            type: 'warning', // সাধারণ ওয়ার্নিং
+            type: 'warning', 
             timestamp: Date.now()
         }).then(() => {
             alert("মেসেজ পাঠানো হয়েছে!");
@@ -118,7 +101,6 @@ function sendCustomAlert(name) {
     }
 }
 
-// --- ২. নাম পরিবর্তন (Rename Update) ---
 function renameUser(oldName) {
     let newName = prompt(`'${oldName}' এর নতুন নাম দিন (English 3-6 chars):`, oldName);
     
@@ -135,10 +117,8 @@ function renameUser(oldName) {
                     let data = oldSnap.val();
                     data.name = newName; 
                     
-                    // ১. নতুন নামে ডাটা সেট করা
                     db.ref('users/' + newName).set(data)
                     .then(() => {
-                        // ২. প্লেয়ারের কাছে 'alerts' নোডে রিনেম অ্যালার্ট পাঠানো
                         return db.ref('alerts/' + oldName).set({
                             message: `আপনার নাম পরিবর্তন করে '${newName}' করা হয়েছে!`,
                             type: 'rename',
@@ -147,7 +127,6 @@ function renameUser(oldName) {
                         });
                     })
                     .then(() => {
-                        // ৩. এরপর পুরোনো ডাটা ডিলিট
                         return db.ref('users/' + oldName).remove();
                     })
                     .then(() => {
@@ -160,7 +139,6 @@ function renameUser(oldName) {
     }
 }
 
-// --- ৩. এডিট স্কোর ---
 function editUser(name, oldTotal, oldHighest) {
     let newTotal = prompt(`'${name}' এর নতুন Total Score দিন:`, oldTotal);
     if (newTotal !== null && newTotal.trim() !== "") {
@@ -186,7 +164,6 @@ function editUser(name, oldTotal, oldHighest) {
     }
 }
 
-// --- ৪. ডিলিট ইউজার ---
 function deleteUser(name) {
     const reason = prompt(`'${name}' কে ডিলিট করার কারণ:`, "Banned by Admin");
     if (reason !== null) {
@@ -202,7 +179,6 @@ function deleteUser(name) {
     }
 }
 
-// --- ৫. কিং রিক্যালকুলেশন ---
 function recalculateKing() {
     db.ref('users').once('value').then((snapshot) => {
         let maxScore = 0;

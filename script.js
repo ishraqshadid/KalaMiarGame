@@ -1,6 +1,3 @@
-// ==========================================
-// ** 1. CONFIGURATION **
-// ==========================================
 const firebaseConfig = {
     apiKey: "AIzaSyC76uQ_D4GHJNxoPXd5xZYq19rTlsQMDF4",
     authDomain: "kalamiargame.firebaseapp.com",
@@ -15,9 +12,6 @@ const firebaseConfig = {
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.database();
 
-// ==========================================
-// ** 2. ASSETS & VARIABLES **
-// ==========================================
 const thin1 = new Image(); thin1.src = 'thin1.webp';
 const thin2 = new Image(); thin2.src = 'thin2.webp';
 const thin3 = new Image(); thin3.src = 'thin3.webp';
@@ -75,12 +69,8 @@ let extraLives = 0;
 let lifeBlinkTimer = 0;
 let isInvincible = false;
 
-// Alert Handling Variables
 let currentAlertData = null; 
 
-// ==========================================
-// ** 3. INITIALIZATION **
-// ==========================================
 window.onload = function() {
     resize();
     listenToTopRank();
@@ -136,7 +126,6 @@ function startActiveStatusUpdater() {
     }, 10000); 
 }
 
-// ** ALERT LISTENER **
 function listenToAlerts(name) {
     db.ref('alerts/' + name).on('value', (snapshot) => {
         if(snapshot.exists()) {
@@ -147,15 +136,12 @@ function listenToAlerts(name) {
     });
 }
 
-// ** SHOW RED ALERT **
-// ** SHOW RED ALERT **
 function showRedAlert(msg) {
     const modal = document.getElementById('redAlertModal');
     const txt = document.getElementById('redAlertText');
     txt.innerText = msg;
     modal.style.display = 'flex';
     
-    // অ্যালার্ট আসার সাথে সাথেই সাউন্ড বন্ধ হবে
     fatSound.pause();
     pubgSound.pause();
     
@@ -164,33 +150,25 @@ function showRedAlert(msg) {
     }
 }
 
-// ** CLOSE RED ALERT (HANDLE KICK/RENAME) **
-// ** CLOSE RED ALERT (FIXED SOUND ISSUE) **
 function closeRedAlert() {
     document.getElementById('redAlertModal').style.display = 'none';
     
-    // ডাটাবেস থেকে অ্যালার্ট রিমুভ (যদি থাকে)
     if(currentPlayerName) {
         db.ref('alerts/' + currentPlayerName).remove();
     }
 
-    // যদি রিনেম হয়
     if(currentAlertData && currentAlertData.type === 'rename') {
         const newName = currentAlertData.newName;
         localStorage.setItem('lc_last_player', newName);
         location.reload(); 
     }
-    // যদি কিক/ব্যান হয়
     else if (currentAlertData && currentAlertData.type === 'kick') {
         localStorage.removeItem('lc_last_player');
         currentPlayerName = "";
         window.location.reload();
     }
-    // সাধারণ মেসেজ হলে গেম রিজুম
     else if (gameRunning) {
         update(); 
-        
-        // ** FIX: শুধুমাত্র প্লেয়ার মোটা থাকলেই সাউন্ড বাজবে **
         if(!isPubgPlaying && currentState === STATE_FAT_WAIT) {
             fatSound.play().catch(()=>{});
         }
@@ -208,13 +186,11 @@ function syncUserWithFirebase(name) {
                 document.getElementById('myBestDisp').innerText = toBanglaNum(currentPlayerData.highest);
             }
         } else {
-            // ডাটা নেই (Delete বা Rename)
             setTimeout(() => {
-                if(!currentAlertData) { // যদি অন্য কোনো অ্যালার্ট না থাকে
+                if(!currentAlertData) { 
                      db.ref('kick_messages/' + name).once('value').then((msgSnap) => {
                          if(localStorage.getItem('lc_last_player') === name) {
                              db.ref('alerts/' + name).once('value').then((alertSnap) => {
-                                 // যদি রিনেম অ্যালার্ট না থাকে, তার মানে এটা কিক
                                  if(!alertSnap.exists()) {
                                     gameRunning = false;
                                     if(animationId) cancelAnimationFrame(animationId);
@@ -222,7 +198,6 @@ function syncUserWithFirebase(name) {
                                     let alertMsg = "আপনার একাউন্টটি অ্যাডমিন প্যানেল থেকে ডিলিট করা হয়েছে!";
                                     if (msgSnap.exists()) alertMsg = "মেসেজ: " + msgSnap.val();
                                     
-                                    // লাল বক্সে দেখানোর জন্য ডাটা সেট করা
                                     currentAlertData = { type: 'kick' };
                                     showRedAlert(alertMsg);
                                     
@@ -284,10 +259,8 @@ function submitName() {
     if(!rawInput) return;
 
     // ১. নাম অটো ফরম্যাট (প্রথম অক্ষর বড়, বাকি সব ছোট)
-    // যেমন: "nAhi" -> "Nahi"
     const input = rawInput.charAt(0).toUpperCase() + rawInput.slice(1).toLowerCase();
     
-    // ইনপুট বক্সে সুন্দর ফরম্যাটটি দেখাবে
     document.getElementById('playerNameInput').value = input;
 
     // ৬ ক্যারেক্টার হার্ড লিমিট
@@ -305,8 +278,7 @@ function submitName() {
     submitBtn.innerText = "চেক করা হচ্ছে...";
     submitBtn.disabled = true;
 
-    // ** ২. ডুপ্লিকেট চেকার (Deep Check) **
-    // আমরা পুরো ইউজার লিস্ট নামিয়ে চেক করব যে এই বানানের কেউ আছে কিনা
+    // ** ২. ডুপ্লিকেট চেকার **
     db.ref('users').once('value').then((snapshot) => {
         let nameTaken = false;
         let existingName = "";
@@ -315,18 +287,16 @@ function submitName() {
             const users = snapshot.val();
             const keys = Object.keys(users);
             
-            // লুপ চালিয়ে চেক করা হচ্ছে (Case Insensitive Match)
             for (let i = 0; i < keys.length; i++) {
                 if (keys[i].toLowerCase() === input.toLowerCase()) {
                     nameTaken = true;
-                    existingName = keys[i]; // আসল নামটি ধরা হলো
+                    existingName = keys[i]; 
                     break;
                 }
             }
         }
 
         if (nameTaken) {
-            // যদি নাম মিলে যায়
             const hasNumber = /[0-9]+$/.test(input);
             if (!hasNumber) {
                 showNameError(`'${existingName}' নামটি ইতিমধ্যে আছে! নামের শেষে সংখ্যা দিন।`);
@@ -336,7 +306,7 @@ function submitName() {
                 resetBtn();
             }
         } else {
-            // নাম একদম ইউনিক, সেভ করা হচ্ছে
+            // নাম ইউনিক, সেভ করা হচ্ছে
             saveUserAndStart(input);
         }
 
@@ -347,6 +317,11 @@ function submitName() {
     });
 
     function saveUserAndStart(validName) {
+        // ** FIX: নতুন ইউজার ঢোকার সময় আগের বাসি (Stale) অ্যালার্ট মুছে ফেলা **
+        // এতে করে আগের কারো রিনেম অ্যালার্ট নতুন ইউজারের ঘাড়ে চাপবে না
+        db.ref('alerts/' + validName).remove(); 
+        db.ref('kick_messages/' + validName).remove();
+
         currentPlayerName = validName;
         currentPlayerData = { name: validName, total: 0, highest: 0 };
         
@@ -402,7 +377,6 @@ function showLeaderboard() {
     const listDiv = document.getElementById('leaderboardList');
     const totalMsg = document.getElementById('totalLootMsg');
     
-    // লোডিং এনিমেশন বা টেক্সট
     listDiv.innerHTML = "<p style='text-align:center; margin-top:20px; color:#aaa;'>সার্ভার থেকে ডাটা আনা হচ্ছে...</p>";
     totalMsg.innerText = "হিসাব করা হচ্ছে...";
     
@@ -411,39 +385,31 @@ function showLeaderboard() {
             const usersObj = snapshot.val();
             let playersArray = [];
 
-            // ১. সেফলি ডাটা অ্যারেতে নেওয়া (যাতে এরর না খায়)
             Object.keys(usersObj).forEach(key => {
                 const u = usersObj[key];
-                // যদি নাম এবং টোটাল থাকে তবেই লিস্টে নিবে
                 if (u && u.name) {
                     playersArray.push({
                         name: u.name,
-                        total: u.total || 0, // টোটাল না থাকলে ০ ধরবে
+                        total: u.total || 0, 
                         highest: u.highest || 0
                     });
                 }
             });
 
-            // ২. সেফলি সর্ট করা (বড় থেকে ছোট)
             playersArray.sort((a, b) => b.total - a.total);
 
-            // ৩. মোট লুটের হিসাব
             let grandTotal = 0;
             playersArray.forEach(p => grandTotal += p.total);
             totalMsg.innerHTML = `সবাই মিলে এই পর্যন্ত মোট <span style="color: #FFD700; font-weight:bold;">${toBanglaNum(grandTotal)}</span> টাকা মেরেছেন!`;
 
-            // ৪. লিস্ট রেন্ডার করা
             listDiv.innerHTML = "";
             
-            // সর্বোচ্চ ১০০ জন দেখাবে (যাতে লোড ফাস্ট হয়)
             playersArray.slice(0, 100).forEach((p, index) => {
                 let item = document.createElement('div');
                 item.className = 'rank-item';
                 
-                // নিজের নাম হাইলাইট করা
                 if (p.name === currentPlayerName) item.classList.add('highlight');
                 
-                // HTML বসানো
                 item.innerHTML = `
                     <span style="display:flex; gap:10px;">
                         <span style="color:#aaa; width:25px;">#${toBanglaNum(index+1)}</span> 
@@ -468,7 +434,6 @@ function closeModal(id) { document.getElementById(id).style.display = 'none'; do
 function toBanglaNum(num) { return num.toLocaleString('bn-BD'); }
 
 function triggerCenterAnim(text, color) {
-    // যেই মেসেজগুলো আপনি দেখতে চান না, সেগুলো এখানে ফিল্টার করা হচ্ছে
     const blockedTexts = [
         "ওজন কমেছে!", 
         "মোটা হয়ে গেছি!", 
@@ -477,12 +442,10 @@ function triggerCenterAnim(text, color) {
         "আবার খিদা লেগেছে!"
     ];
 
-    // যদি ওপরের কোনো মেসেজ হয়, তাহলে ফাংশন এখানেই থেমে যাবে (কিছু দেখাবে না)
     if (blockedTexts.includes(text)) {
         return; 
     }
 
-    // বাকি সব (যেমন টাকার স্কোর +500) আগের মতোই দেখাবে
     centerAnim.innerText = text; 
     centerAnim.style.color = color;
     centerAnim.style.transform = "translate(-50%, -50%) scale(1.2)"; 
@@ -546,14 +509,12 @@ function update() {
     animationId = requestAnimationFrame(update); 
     drawBackground();
 
-    // --- এই অংশটুকু পরিবর্তন করুন ---
     if (isDead) { 
         deathTimer++; 
         drawObjects(); 
         
-        // টাইমার শেষ হলে লুপ বন্ধ করে মেনু দেখাবে
         if (deathTimer >= deathLimit) { 
-            cancelAnimationFrame(animationId); // লুপ থামানো হলো
+            cancelAnimationFrame(animationId); 
             showGameOverMenu(); 
         }
         return; 
@@ -657,7 +618,6 @@ function checkCollision(p, obj) { let pRect = { x: p.x + 10, y: p.y + 5, width: 
 function handleDeath(type) { 
     if(isDead || isInvincible) return; 
 
-    // লাইফ লজিক (যা ছিল তাই থাকবে)
     if (extraLives > 0) {
         extraLives--;
         document.getElementById('lifeCount').innerText = toBanglaNum(extraLives);
@@ -668,32 +628,27 @@ function handleDeath(type) {
         return; 
     }
 
-    // মেইন গেম লুপ এখন বন্ধ করবো না, update() ফাংশন সেটা হ্যান্ডেল করবে
     isDead = true; 
     
-    // সাউন্ড রিসেট
     fatSound.pause(); fatSound.currentTime = 0; 
     pubgSound.pause(); pubgSound.currentTime = 0; 
     isPubgPlaying = false; 
 
-    // টাইমার সেটআপ
     deathTimer = 0; 
 
     if(type === 'enemy') { 
         outSound.currentTime = 0; 
         outSound.play().catch(()=>{}); 
-        deathLimit = 250; // সাউন্ডের জন্য অপেক্ষা
+        deathLimit = 250; 
     } else { 
         stoneSound.currentTime = 0; 
         stoneSound.play().catch(()=>{}); 
         deathLimit = 300; 
     } 
 
-    // UI লুকানো
     document.getElementById('uiBar').style.opacity = '0'; 
     hideWarning(); 
     
-    // ডেথ মেসেজ দেখানো
     const dMsg = document.getElementById('deathMsg'); 
     const dVal = document.getElementById('deathScoreVal'); 
     if(dVal) dVal.innerText = toBanglaNum(score); 
@@ -702,15 +657,11 @@ function handleDeath(type) {
         dMsg.classList.add('slide-down-anim'); 
     }
     
-    // স্কোর আপডেট
     updateDataOnDeath(); 
-    
-    // নোট: এখান থেকে কোনো deathLoop কল করা হবে না। update() ফাংশন এটি দেখবে।
 }
 
 function showGameOverMenu() { 
     try {
-        // ১. আগের অ্যানিমেশন ও মেসেজ সরানো
         const dMsg = document.getElementById('deathMsg'); 
         if(dMsg) {
             dMsg.style.display = 'none'; 
@@ -722,29 +673,24 @@ function showGameOverMenu() {
         if(logo) logo.style.display = 'none'; 
         if(note) note.style.display = 'none';
 
-        // ২. ভিডিও প্লে করা (Safe Check)
         const introVideo = document.getElementById('introVideo'); 
         if(introVideo) { 
             introVideo.currentTime = 0; 
-            // ভিডিও প্লে করতে গিয়ে এরর হলে (যেমন ইউজার ইন্টার‍্যাকশন পলিসি) সেটা ইগনোর করবে
             introVideo.play().catch((e)=>{ console.log("Video Play Error (Ignored):", e); }); 
         }
         
-        // ৩. মেইন ওভারলে চালু করা
         const ov = document.getElementById('overlay');
         if(ov) {
             ov.style.display = 'flex'; 
             ov.classList.add('game-over-mode');
         }
         
-        // ৪. স্কোর দেখানো
         const fPanel = document.getElementById('finalScorePanel');
         if(fPanel) fPanel.style.display = 'block'; 
         
         const fScore = document.getElementById('finalScoreVal');
         if(fScore) fScore.innerText = toBanglaNum(score) + " ৳";
         
-        // ৫. বেস্ট স্কোর এবং কিং ডাটা (Safe Check)
         let myBest = score;
         if(currentPlayerData && currentPlayerData.highest) {
             myBest = currentPlayerData.highest > score ? currentPlayerData.highest : score;
@@ -752,11 +698,9 @@ function showGameOverMenu() {
         const pBest = document.getElementById('personalBestVal');
         if(pBest) pBest.innerText = toBanglaNum(myBest) + " ৳";
         
-        // ** King Data Safe Check (এখানেই আটকে যেত) **
         let kingName = "লোড হচ্ছে...";
         let kingScore = 0;
         
-        // ডাটা চেক করে নেওয়া হচ্ছে
         if (globalTopRank && globalTopRank.name) {
             kingName = globalTopRank.name;
             kingScore = globalTopRank.score;
@@ -766,7 +710,6 @@ function showGameOverMenu() {
         const gKing = document.getElementById('globalKingVal');
         if(gKing) gKing.innerText = kingText;
         
-        // ৬. বাকি বাটন ও টেক্সট হ্যান্ডলিং
         const tMsg = document.getElementById('titleMsg');
         if(tMsg) {
             tMsg.innerText = ""; 
@@ -788,7 +731,6 @@ function showGameOverMenu() {
 
     } catch (err) {
         console.error("Menu Error Caught:", err);
-        // যদি কোনো কারণে উপরের কোড ফেইল করে, তবুও যাতে অন্তত মেনু আসে
         document.getElementById('overlay').style.display = 'flex';
         document.getElementById('finalScorePanel').style.display = 'block';
     }
