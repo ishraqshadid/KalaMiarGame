@@ -18,25 +18,25 @@ const db = firebase.database();
 // ==========================================
 // ** 2. ASSETS & VARIABLES **
 // ==========================================
-const thin1 = new Image(); thin1.src = 'thin1.png';
-const thin2 = new Image(); thin2.src = 'thin2.png';
-const thin3 = new Image(); thin3.src = 'thin3.png';
-const med1 = new Image(); med1.src = 'med1.png';
-const med2 = new Image(); med2.src = 'med2.png';
-const med3 = new Image(); med3.src = 'med3.png';
-const fat1 = new Image(); fat1.src = 'fat1.png';
-const fat2 = new Image(); fat2.src = 'fat2.png';
-const fat3 = new Image(); fat3.src = 'fat3.png';
-const enemy1 = new Image(); enemy1.src = 'enemy1.png';
-const enemy2 = new Image(); enemy2.src = 'enemy2.png';
-const enemy3 = new Image(); enemy3.src = 'enemy3.png';
-const foodImg = new Image(); foodImg.src = 'burger.png';
-const note50 = new Image(); note50.src = 'note50.png';
-const note100 = new Image(); note100.src = 'note100.png';
-const note200 = new Image(); note200.src = 'note200.png';
-const note500 = new Image(); note500.src = 'note500.png';
-const note1000 = new Image(); note1000.src = 'note1000.png';
-const pubgImg = new Image(); pubgImg.src = 'pubg.png';
+const thin1 = new Image(); thin1.src = 'thin1.webp';
+const thin2 = new Image(); thin2.src = 'thin2.webp';
+const thin3 = new Image(); thin3.src = 'thin3.webp';
+const med1 = new Image(); med1.src = 'med1.webp';
+const med2 = new Image(); med2.src = 'med2.webp';
+const med3 = new Image(); med3.src = 'med3.webp';
+const fat1 = new Image(); fat1.src = 'fat1.webp';
+const fat2 = new Image(); fat2.src = 'fat2.webp';
+const fat3 = new Image(); fat3.src = 'fat3.webp';
+const enemy1 = new Image(); enemy1.src = 'enemy1.webp';
+const enemy2 = new Image(); enemy2.src = 'enemy2.webp';
+const enemy3 = new Image(); enemy3.src = 'enemy3.webp';
+const foodImg = new Image(); foodImg.src = 'burger.webp';
+const note50 = new Image(); note50.src = 'note50.webp';
+const note100 = new Image(); note100.src = 'note100.webp';
+const note200 = new Image(); note200.src = 'note200.webp';
+const note500 = new Image(); note500.src = 'note500.webp';
+const note1000 = new Image(); note1000.src = 'note1000.webp';
+const pubgImg = new Image(); pubgImg.src = 'pubg.webp';
 
 const coinSound = new Audio('coin.mp3'); coinSound.preload = 'auto';
 const eatSound = new Audio('eat.mp3'); eatSound.preload = 'auto';
@@ -71,6 +71,13 @@ let currentPlayerData = { total: 0, highest: 0 };
 let globalTopRank = { name: "কেউ না", score: 0 };
 let bgGradient;
 
+let extraLives = 0; 
+let lifeBlinkTimer = 0;
+let isInvincible = false;
+
+// Alert Handling Variables
+let currentAlertData = null; 
+
 // ==========================================
 // ** 3. INITIALIZATION **
 // ==========================================
@@ -88,10 +95,12 @@ window.onload = function() {
         currentPlayerName = lastPlayer;
         updateUIForLoggedInUser();
         syncUserWithFirebase(lastPlayer);
+        startActiveStatusUpdater();
+        listenToAlerts(lastPlayer); 
     } else {
         document.getElementById('titleMsg').innerText = "WELCOME!";
         const nameDisp = document.getElementById('showPlayerName');
-        if(nameDisp) nameDisp.style.display = 'none'; // নাম না থাকলে হাইড
+        if(nameDisp) nameDisp.style.display = 'none'; 
     }
     
     document.getElementById('finalScorePanel').style.display = 'none';
@@ -117,10 +126,81 @@ function createBackgroundGradient() {
     bgGradient.addColorStop(1, "#6DD5FA");
 }
 
-// script.js এর syncUserWithFirebase ফাংশন
+function startActiveStatusUpdater() {
+    setInterval(() => {
+        if(currentPlayerName) {
+            db.ref('users/' + currentPlayerName).update({
+                lastSeen: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+    }, 10000); 
+}
+
+// ** ALERT LISTENER **
+function listenToAlerts(name) {
+    db.ref('alerts/' + name).on('value', (snapshot) => {
+        if(snapshot.exists()) {
+            const data = snapshot.val();
+            currentAlertData = data; 
+            showRedAlert(data.message);
+        }
+    });
+}
+
+// ** SHOW RED ALERT **
+// ** SHOW RED ALERT **
+function showRedAlert(msg) {
+    const modal = document.getElementById('redAlertModal');
+    const txt = document.getElementById('redAlertText');
+    txt.innerText = msg;
+    modal.style.display = 'flex';
+    
+    // অ্যালার্ট আসার সাথে সাথেই সাউন্ড বন্ধ হবে
+    fatSound.pause();
+    pubgSound.pause();
+    
+    if(gameRunning) {
+        cancelAnimationFrame(animationId);
+    }
+}
+
+// ** CLOSE RED ALERT (HANDLE KICK/RENAME) **
+// ** CLOSE RED ALERT (FIXED SOUND ISSUE) **
+function closeRedAlert() {
+    document.getElementById('redAlertModal').style.display = 'none';
+    
+    // ডাটাবেস থেকে অ্যালার্ট রিমুভ (যদি থাকে)
+    if(currentPlayerName) {
+        db.ref('alerts/' + currentPlayerName).remove();
+    }
+
+    // যদি রিনেম হয়
+    if(currentAlertData && currentAlertData.type === 'rename') {
+        const newName = currentAlertData.newName;
+        localStorage.setItem('lc_last_player', newName);
+        location.reload(); 
+    }
+    // যদি কিক/ব্যান হয়
+    else if (currentAlertData && currentAlertData.type === 'kick') {
+        localStorage.removeItem('lc_last_player');
+        currentPlayerName = "";
+        window.location.reload();
+    }
+    // সাধারণ মেসেজ হলে গেম রিজুম
+    else if (gameRunning) {
+        update(); 
+        
+        // ** FIX: শুধুমাত্র প্লেয়ার মোটা থাকলেই সাউন্ড বাজবে **
+        if(!isPubgPlaying && currentState === STATE_FAT_WAIT) {
+            fatSound.play().catch(()=>{});
+        }
+    }
+    
+    currentAlertData = null;
+}
+
 function syncUserWithFirebase(name) {
     db.ref('users/' + name).off();
-
     db.ref('users/' + name).on('value', (snapshot) => {
         if (snapshot.exists()) {
             currentPlayerData = snapshot.val();
@@ -128,22 +208,31 @@ function syncUserWithFirebase(name) {
                 document.getElementById('myBestDisp').innerText = toBanglaNum(currentPlayerData.highest);
             }
         } else {
-            if (localStorage.getItem('lc_last_player') === name) {
-                gameRunning = false;
-                if(animationId) cancelAnimationFrame(animationId);
-                
-                db.ref('kick_messages/' + name).once('value').then((msgSnap) => {
-                    let alertMsg = "আপনার একাউন্টটি অ্যাডমিন প্যানেল থেকে ডিলিট করা হয়েছে!";
-                    if (msgSnap.exists()) {
-                        alertMsg = "মেসেজ: " + msgSnap.val();
-                        db.ref('kick_messages/' + name).remove();
-                    }
-                    alert(alertMsg);
-                    localStorage.removeItem('lc_last_player');
-                    currentPlayerName = "";
-                    window.location.reload();
-                });
-            }
+            // ডাটা নেই (Delete বা Rename)
+            setTimeout(() => {
+                if(!currentAlertData) { // যদি অন্য কোনো অ্যালার্ট না থাকে
+                     db.ref('kick_messages/' + name).once('value').then((msgSnap) => {
+                         if(localStorage.getItem('lc_last_player') === name) {
+                             db.ref('alerts/' + name).once('value').then((alertSnap) => {
+                                 // যদি রিনেম অ্যালার্ট না থাকে, তার মানে এটা কিক
+                                 if(!alertSnap.exists()) {
+                                    gameRunning = false;
+                                    if(animationId) cancelAnimationFrame(animationId);
+                                    
+                                    let alertMsg = "আপনার একাউন্টটি অ্যাডমিন প্যানেল থেকে ডিলিট করা হয়েছে!";
+                                    if (msgSnap.exists()) alertMsg = "মেসেজ: " + msgSnap.val();
+                                    
+                                    // লাল বক্সে দেখানোর জন্য ডাটা সেট করা
+                                    currentAlertData = { type: 'kick' };
+                                    showRedAlert(alertMsg);
+                                    
+                                    db.ref('kick_messages/' + name).remove();
+                                 }
+                             });
+                         }
+                     });
+                }
+            }, 1000);
         }
     });
 }
@@ -151,17 +240,11 @@ function syncUserWithFirebase(name) {
 function updateUIForLoggedInUser() {
     document.getElementById('mainPlayBtn').innerText = "PLAY"; 
     document.getElementById('leaderboardBtn').style.display = "inline-block";
-    
-    // ** লোগোর নিচের এলিমেন্ট ধরা **
     const nameDisplay = document.getElementById('showPlayerName');
-    
     if (nameDisplay) {
-        // এখানে স্বাগতম মেসেজ বসানো হলো
         nameDisplay.innerText = "Welcome " + currentPlayerName + "!";
         nameDisplay.style.display = "block";
     }
-    
-    // টাইটেলটা ফাঁকা বা হাইড করে দেয়া (যাতে ডাবল না দেখায়)
     const titleMsg = document.getElementById('titleMsg');
     if(titleMsg && titleMsg.innerText === "") {
         titleMsg.style.display = 'none';
@@ -173,9 +256,6 @@ function handlePlayButton() {
     else openNameInput();
 }
 
-// ==========================================
-// ** 4. NAME VALIDATION LOGIC **
-// ==========================================
 function checkNameLocal(name, takenNames = []) {
     let lowerName = name.toLowerCase();
     const badPatterns = [ /f+u+c+k+/, /f+c+k+/, /s+e+x+/, /d+i+c+k+/, /c+o+c+k+/, /b+i+t+c+h+/, /a+s+s+/, /n+u+d+e+/, /p+o+r+n+/, /x+x+x+/, /p+u+s+s+y+/, /s+l+u+t+/, /w+h+o+r+e+/, /k+u+t+t+a+/, /k+u+t+a+/, /k+u+u+t+a+/, /m+a+g+i+/, /m+a+a+g+i+/, /m+g+i+/, /c+h+o+d+/, /c+o+d+/, /c+u+d+/, /b+a+l+/, /b+a+a+l+/, /b+h+a+l+/, /k+h+a+n+k+i+/, /k+n+k+i+/, /s+h+u+o+r+/, /s+u+o+r+/, /s+o+n+a+/, /s+h+o+n+a+/ ];
@@ -199,57 +279,94 @@ function checkNameLocal(name, takenNames = []) {
 }
 
 function submitName() {
-    const input = document.getElementById('playerNameInput').value.trim();
+    let rawInput = document.getElementById('playerNameInput').value.trim();
+    
+    if(!rawInput) return;
+
+    // ১. নাম অটো ফরম্যাট (প্রথম অক্ষর বড়, বাকি সব ছোট)
+    // যেমন: "nAhi" -> "Nahi"
+    const input = rawInput.charAt(0).toUpperCase() + rawInput.slice(1).toLowerCase();
+    
+    // ইনপুট বক্সে সুন্দর ফরম্যাটটি দেখাবে
+    document.getElementById('playerNameInput').value = input;
+
+    // ৬ ক্যারেক্টার হার্ড লিমিট
+    if(input.length > 6) { showNameError("নাম সর্বোচ্চ ৬ অক্ষরের হতে হবে!"); return; }
+
     const submitBtn = document.querySelector('#nameModal button');
     const errorMsg = document.getElementById('nameError');
     const originalBtnText = "সাবমিট";
     errorMsg.style.display = 'none';
 
+    // লোকাল গালি চেক
     const localCheck = checkNameLocal(input, []);
     if (!localCheck.valid) { showNameError(localCheck.msg); return; }
 
     submitBtn.innerText = "চেক করা হচ্ছে...";
     submitBtn.disabled = true;
 
-    const baseNameMatch = input.match(/^[a-zA-Z]+/);
-    const baseName = baseNameMatch[0];
-    const hasNumber = /[0-9]+$/.test(input);
+    // ** ২. ডুপ্লিকেট চেকার (Deep Check) **
+    // আমরা পুরো ইউজার লিস্ট নামিয়ে চেক করব যে এই বানানের কেউ আছে কিনা
+    db.ref('users').once('value').then((snapshot) => {
+        let nameTaken = false;
+        let existingName = "";
 
-    db.ref('users/' + baseName).get().then((baseSnapshot) => {
-        if (baseSnapshot.exists()) {
-            if (!hasNumber) { showNameError("এই নামটি নেওয়া হয়ে গেছে! নামের শেষে সংখ্যা যোগ করুন"); resetBtn(); } 
-            else {
-                db.ref('users/' + input).get().then((fullSnapshot) => {
-                    if (fullSnapshot.exists()) { showNameError("এই নাম এবং সংখ্যাও ব্যবহার হয়েছে, অন্য সংখ্যা দিন।"); resetBtn(); } 
-                    else { saveUserAndStart(input); }
-                });
+        if (snapshot.exists()) {
+            const users = snapshot.val();
+            const keys = Object.keys(users);
+            
+            // লুপ চালিয়ে চেক করা হচ্ছে (Case Insensitive Match)
+            for (let i = 0; i < keys.length; i++) {
+                if (keys[i].toLowerCase() === input.toLowerCase()) {
+                    nameTaken = true;
+                    existingName = keys[i]; // আসল নামটি ধরা হলো
+                    break;
+                }
+            }
+        }
+
+        if (nameTaken) {
+            // যদি নাম মিলে যায়
+            const hasNumber = /[0-9]+$/.test(input);
+            if (!hasNumber) {
+                showNameError(`'${existingName}' নামটি ইতিমধ্যে আছে! নামের শেষে সংখ্যা দিন।`);
+                resetBtn();
+            } else {
+                showNameError("এই নাম এবং সংখ্যাও ব্যবহার হয়েছে, অন্য সংখ্যা দিন।");
+                resetBtn();
             }
         } else {
-            if (hasNumber) { showNameError("Warning: নাম খালি আছে, নম্বর ছাড়া চেষ্টা করুন।"); resetBtn(); } 
-            else { saveUserAndStart(input); }
+            // নাম একদম ইউনিক, সেভ করা হচ্ছে
+            saveUserAndStart(input);
         }
-    }).catch((error) => { showNameError("ইন্টারনেট সমস্যা!"); resetBtn(); });
+
+    }).catch((error) => { 
+        console.error(error);
+        showNameError("ইন্টারনেট সমস্যা!"); 
+        resetBtn(); 
+    });
 
     function saveUserAndStart(validName) {
         currentPlayerName = validName;
         currentPlayerData = { name: validName, total: 0, highest: 0 };
+        
         db.ref('users/' + validName).set(currentPlayerData);
         localStorage.setItem('lc_last_player', currentPlayerName);
         
         syncUserWithFirebase(validName);
-        updateUIForLoggedInUser(); // UI আপডেট করা
+        startActiveStatusUpdater();
+        listenToAlerts(validName);
+        updateUIForLoggedInUser();
         closeModal('nameModal');
         resetBtn();
         startGame();
     }
+    
     function resetBtn() { submitBtn.innerText = originalBtnText; submitBtn.disabled = false; }
 }
 
 function showNameError(msg) { const err = document.getElementById('nameError'); err.style.display = 'block'; err.innerText = msg; }
 
-// ==========================================
-// ** 5. GAME ENGINE **
-// ==========================================
 function listenToTopRank() {
     db.ref('globalTopRank').on('value', (snapshot) => {
         if (snapshot.exists()) {
@@ -280,38 +397,100 @@ function updateDataOnDeath() {
 
 function showLeaderboard() {
     if(!currentPlayerName) { openNameInput(); return; }
+    
     document.getElementById('leaderboardModal').style.display = 'flex';
     const listDiv = document.getElementById('leaderboardList');
     const totalMsg = document.getElementById('totalLootMsg');
-    listDiv.innerHTML = "লোড হচ্ছে...";
     
-    db.ref('users').get().then((snapshot) => {
+    // লোডিং এনিমেশন বা টেক্সট
+    listDiv.innerHTML = "<p style='text-align:center; margin-top:20px; color:#aaa;'>সার্ভার থেকে ডাটা আনা হচ্ছে...</p>";
+    totalMsg.innerText = "হিসাব করা হচ্ছে...";
+    
+    db.ref('users').once('value').then((snapshot) => {
         if (snapshot.exists()) {
             const usersObj = snapshot.val();
-            let sortedPlayers = Object.values(usersObj).sort((a, b) => b.total - a.total);
+            let playersArray = [];
+
+            // ১. সেফলি ডাটা অ্যারেতে নেওয়া (যাতে এরর না খায়)
+            Object.keys(usersObj).forEach(key => {
+                const u = usersObj[key];
+                // যদি নাম এবং টোটাল থাকে তবেই লিস্টে নিবে
+                if (u && u.name) {
+                    playersArray.push({
+                        name: u.name,
+                        total: u.total || 0, // টোটাল না থাকলে ০ ধরবে
+                        highest: u.highest || 0
+                    });
+                }
+            });
+
+            // ২. সেফলি সর্ট করা (বড় থেকে ছোট)
+            playersArray.sort((a, b) => b.total - a.total);
+
+            // ৩. মোট লুটের হিসাব
             let grandTotal = 0;
-            sortedPlayers.forEach(player => { grandTotal += (player.total || 0); });
+            playersArray.forEach(p => grandTotal += p.total);
             totalMsg.innerHTML = `সবাই মিলে এই পর্যন্ত মোট <span style="color: #FFD700; font-weight:bold;">${toBanglaNum(grandTotal)}</span> টাকা মেরেছেন!`;
+
+            // ৪. লিস্ট রেন্ডার করা
             listDiv.innerHTML = "";
-            sortedPlayers.slice(0, 50).forEach((p, index) => {
+            
+            // সর্বোচ্চ ১০০ জন দেখাবে (যাতে লোড ফাস্ট হয়)
+            playersArray.slice(0, 100).forEach((p, index) => {
                 let item = document.createElement('div');
                 item.className = 'rank-item';
+                
+                // নিজের নাম হাইলাইট করা
                 if (p.name === currentPlayerName) item.classList.add('highlight');
-                item.innerHTML = `<span>#${index+1} ${p.name}</span> <span>${toBanglaNum(p.total)} ৳</span>`;
+                
+                // HTML বসানো
+                item.innerHTML = `
+                    <span style="display:flex; gap:10px;">
+                        <span style="color:#aaa; width:25px;">#${toBanglaNum(index+1)}</span> 
+                        <span>${p.name}</span>
+                    </span> 
+                    <span>${toBanglaNum(p.total)} ৳</span>
+                `;
                 listDiv.appendChild(item);
             });
-        } else { listDiv.innerHTML = "এখনও কেউ খেলেনি!"; totalMsg.innerText = ""; }
-    }).catch((error) => { listDiv.innerHTML = "ডাটা লোড করতে সমস্যা হয়েছে!"; });
-}
 
+        } else { 
+            listDiv.innerHTML = "<p style='text-align:center;'>এখনও কেউ খেলেনি!</p>"; 
+            totalMsg.innerText = ""; 
+        }
+    }).catch((error) => { 
+        console.error(error);
+        listDiv.innerHTML = "<p style='text-align:center; color:#FF5252;'>ডাটা লোড করতে সমস্যা হয়েছে! ইন্টারনেট চেক করুন।</p>"; 
+    });
+}
 function openNameInput() { document.getElementById('nameModal').style.display = 'flex'; document.getElementById('playerNameInput').focus(); }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; document.getElementById('nameError').style.display = 'none'; }
 function toBanglaNum(num) { return num.toLocaleString('bn-BD'); }
 
 function triggerCenterAnim(text, color) {
-    centerAnim.innerText = text; centerAnim.style.color = color;
-    centerAnim.style.transform = "translate(-50%, -50%) scale(1.2)"; centerAnim.style.opacity = "1";
-    setTimeout(() => { centerAnim.style.transform = "translate(-50%, -50%) scale(0)"; centerAnim.style.opacity = "0"; }, 800);
+    // যেই মেসেজগুলো আপনি দেখতে চান না, সেগুলো এখানে ফিল্টার করা হচ্ছে
+    const blockedTexts = [
+        "ওজন কমেছে!", 
+        "মোটা হয়ে গেছি!", 
+        "Yummy!", 
+        "ডায়েট কমপ্লিট!", 
+        "আবার খিদা লেগেছে!"
+    ];
+
+    // যদি ওপরের কোনো মেসেজ হয়, তাহলে ফাংশন এখানেই থেমে যাবে (কিছু দেখাবে না)
+    if (blockedTexts.includes(text)) {
+        return; 
+    }
+
+    // বাকি সব (যেমন টাকার স্কোর +500) আগের মতোই দেখাবে
+    centerAnim.innerText = text; 
+    centerAnim.style.color = color;
+    centerAnim.style.transform = "translate(-50%, -50%) scale(1.2)"; 
+    centerAnim.style.opacity = "1";
+    setTimeout(() => { 
+        centerAnim.style.transform = "translate(-50%, -50%) scale(0)"; 
+        centerAnim.style.opacity = "0"; 
+    }, 800);
 }
 function showWarning(text) { warningMsg.innerText = text; warningMsg.style.display = 'block'; }
 function hideWarning() { warningMsg.style.display = 'none'; }
@@ -334,7 +513,6 @@ function startGame() {
     overlay.style.display = 'none'; overlay.classList.remove('game-over-mode');
     finalScorePanel.style.display = 'none'; uiBar.style.opacity = '1';
     
-    // গেম শুরু হলে লোগো বা টাইটেল হাইড করা যেতে পারে, তবে এখন থাক
     if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen().catch(()=>{}); }
     fatSound.play().then(() => fatSound.pause()).catch(()=>{});
     resetGame();
@@ -365,9 +543,28 @@ function drawBackground() {
     ctx.fillStyle = '#3E2723'; ctx.fillRect(0, groundY, W, groundHeight); ctx.fillStyle = '#43A047'; ctx.fillRect(0, groundY, W, 10);
 }
 function update() {
-    animationId = requestAnimationFrame(update); drawBackground();
-    if (isDead) { deathTimer++; drawObjects(); if (deathTimer >= deathLimit) showGameOverMenu(); return; }
+    animationId = requestAnimationFrame(update); 
+    drawBackground();
+
+    // --- এই অংশটুকু পরিবর্তন করুন ---
+    if (isDead) { 
+        deathTimer++; 
+        drawObjects(); 
+        
+        // টাইমার শেষ হলে লুপ বন্ধ করে মেনু দেখাবে
+        if (deathTimer >= deathLimit) { 
+            cancelAnimationFrame(animationId); // লুপ থামানো হলো
+            showGameOverMenu(); 
+        }
+        return; 
+    }
     if (!gameRunning) return;
+    
+    if(isInvincible) {
+        lifeBlinkTimer++;
+        if(lifeBlinkTimer > 180) { isInvincible = false; lifeBlinkTimer = 0; }
+    }
+
     frame++; stateTimer++; pubgTimer++; if (pubgTimer >= 2100) { spawnPubgIcon(); pubgTimer = 0; }
     player.dy += player.gravity; player.y += player.dy;
     const groundY = window.innerHeight - groundHeight;
@@ -405,7 +602,18 @@ function updateEntities() {
         let item = items[i]; item.x -= gameSpeed; let itemHit = { x: item.x + 5, y: item.y + 5, width: item.width - 10, height: item.height - 10 };
         if (checkCollision(player, itemHit)) {
             if (item.type === 'cash') { score += item.value; if (!isPubgPlaying) { coinSound.currentTime = 0; coinSound.play().catch(()=>{}); } triggerCenterAnim(`+${item.value}`, '#2E7D32'); document.getElementById('scoreDisp').innerText = toBanglaNum(score); } 
-            else if (item.type === 'food') { burgersEaten++; if (!isPubgPlaying) { eatSound.currentTime = 0; eatSound.play().catch(()=>{}); } triggerCenterAnim("Yummy!", "#FF9800"); } 
+            else if (item.type === 'food') { 
+                burgersEaten++; 
+                if(burgersEaten === 14) {
+                    extraLives++;
+                    triggerCenterAnim("1UP! (Life+1)", "#FF4081");
+                    document.getElementById('lifeCount').innerText = toBanglaNum(extraLives);
+                    eatSound.currentTime = 0; eatSound.play().catch(()=>{});
+                } else {
+                    if (!isPubgPlaying) { eatSound.currentTime = 0; eatSound.play().catch(()=>{}); } 
+                    triggerCenterAnim("Yummy!", "#FF9800"); 
+                }
+            } 
             else if (item.type === 'pubg') { pubgSound.currentTime = 0; pubgSound.play().catch(()=>{}); triggerCenterAnim("Winner Winner!", "#FBC02D"); }
             items.splice(i, 1); i--;
         } else if (item.x + item.width < -50) { items.splice(i, 1); i--; }
@@ -429,74 +637,170 @@ function drawObjects() {
     if (player.width < 55) { if(player.grounded) { if(runIndex==0) currentImg=thin1; else if(runIndex==1) currentImg=thin2; else currentImg=thin3; } else currentImg=thin1; } 
     else if (player.width > 80) { if(player.grounded) { if(runIndex==0) currentImg=fat1; else if(runIndex==1) currentImg=fat2; else currentImg=fat3; } else currentImg=fat1; } 
     else { if(player.grounded) { if(runIndex==0) currentImg=med1; else if(runIndex==1) currentImg=med2; else currentImg=med3; } else currentImg=med1; }
+    
+    if(isInvincible && Math.floor(frame / 5) % 2 === 0) {
+        ctx.globalAlpha = 0.5;
+    } else {
+        ctx.globalAlpha = 1.0;
+    }
+
     if(currentImg && currentImg.complete && currentImg.naturalHeight !== 0) ctx.drawImage(currentImg, Math.floor(player.x), Math.floor(player.y), player.width, player.height);
     else { ctx.fillStyle = 'orange'; ctx.fillRect(Math.floor(player.x), Math.floor(player.y), player.width, player.height); }
+    
+    ctx.globalAlpha = 1.0; 
+
     items.forEach(item => { if (item.type === 'pubg') { if(item.img && item.img.complete) ctx.drawImage(item.img, Math.floor(item.x), Math.floor(item.y), item.width, item.height); else { ctx.fillStyle = 'gold'; ctx.fillRect(Math.floor(item.x), Math.floor(item.y), item.width, item.height); } } else if(item.type === 'cash') { if(item.img && item.img.complete) ctx.drawImage(item.img, Math.floor(item.x), Math.floor(item.y), item.width, item.height); else { ctx.fillStyle = '#4CAF50'; ctx.fillRect(Math.floor(item.x), Math.floor(item.y), item.width, item.height); } } else if(item.type === 'food') { if(foodImg.complete) ctx.drawImage(foodImg, Math.floor(item.x), Math.floor(item.y), item.width, item.height); else { ctx.fillStyle = '#FF5722'; ctx.beginPath(); ctx.arc(item.x+20, item.y+20, 20, 0, Math.PI*2); ctx.fill(); } } });
     obstacles.forEach(obs => { if(obs.type === 'enemy') { let enIndex = Math.floor(obs.runFrame / 8) % 3; let eImg = (enIndex==0)?enemy1:(enIndex==1?enemy2:enemy3); if(eImg.complete) ctx.drawImage(eImg, Math.floor(obs.x), Math.floor(obs.y), obs.width, obs.height); else { ctx.fillStyle = '#212121'; ctx.fillRect(Math.floor(obs.x), Math.floor(obs.y), obs.width, obs.height); } } else { ctx.fillStyle = '#616161'; ctx.beginPath(); ctx.moveTo(Math.floor(obs.x), Math.floor(obs.y) + obs.height); ctx.lineTo(Math.floor(obs.x) + obs.width/2, Math.floor(obs.y)); ctx.lineTo(Math.floor(obs.x) + obs.width, Math.floor(obs.y) + obs.height); ctx.fill(); } });
 }
 function checkCollision(p, obj) { let pRect = { x: p.x + 10, y: p.y + 5, width: p.width - 20, height: p.height - 5 }; return (pRect.x < obj.x + obj.width && pRect.x + pRect.width > obj.x && pRect.y < obj.y + obj.height && pRect.y + pRect.height > obj.y); }
 
 function handleDeath(type) { 
-    if(isDead) return; isDead = true; cancelAnimationFrame(animationId); 
-    fatSound.pause(); fatSound.currentTime = 0; pubgSound.pause(); pubgSound.currentTime = 0; isPubgPlaying = false; 
-    if(type === 'enemy') { outSound.currentTime = 0; outSound.play().catch(()=>{}); deathLimit = 210; } else { stoneSound.currentTime = 0; stoneSound.play().catch(()=>{}); deathLimit = 330; } 
-    document.getElementById('uiBar').style.opacity = '0'; hideWarning(); 
-    const dMsg = document.getElementById('deathMsg'); const dVal = document.getElementById('deathScoreVal'); dVal.innerText = toBanglaNum(score); dMsg.style.display = 'block'; dMsg.classList.add('slide-down-anim'); 
+    if(isDead || isInvincible) return; 
+
+    // লাইফ লজিক (যা ছিল তাই থাকবে)
+    if (extraLives > 0) {
+        extraLives--;
+        document.getElementById('lifeCount').innerText = toBanglaNum(extraLives);
+        isInvincible = true; 
+        lifeBlinkTimer = 0;
+        triggerCenterAnim("লাইফ ব্যবহার হয়েছে!", "#FF4081");
+        obstacles = []; 
+        return; 
+    }
+
+    // মেইন গেম লুপ এখন বন্ধ করবো না, update() ফাংশন সেটা হ্যান্ডেল করবে
+    isDead = true; 
+    
+    // সাউন্ড রিসেট
+    fatSound.pause(); fatSound.currentTime = 0; 
+    pubgSound.pause(); pubgSound.currentTime = 0; 
+    isPubgPlaying = false; 
+
+    // টাইমার সেটআপ
+    deathTimer = 0; 
+
+    if(type === 'enemy') { 
+        outSound.currentTime = 0; 
+        outSound.play().catch(()=>{}); 
+        deathLimit = 250; // সাউন্ডের জন্য অপেক্ষা
+    } else { 
+        stoneSound.currentTime = 0; 
+        stoneSound.play().catch(()=>{}); 
+        deathLimit = 300; 
+    } 
+
+    // UI লুকানো
+    document.getElementById('uiBar').style.opacity = '0'; 
+    hideWarning(); 
+    
+    // ডেথ মেসেজ দেখানো
+    const dMsg = document.getElementById('deathMsg'); 
+    const dVal = document.getElementById('deathScoreVal'); 
+    if(dVal) dVal.innerText = toBanglaNum(score); 
+    if(dMsg) {
+        dMsg.style.display = 'block'; 
+        dMsg.classList.add('slide-down-anim'); 
+    }
+    
+    // স্কোর আপডেট
     updateDataOnDeath(); 
-    function deathLoop() { if(!isDead) return; deathTimer++; drawBackground(); drawObjects(); if(deathTimer >= deathLimit) showGameOverMenu(); else requestAnimationFrame(deathLoop); } deathLoop(); 
+    
+    // নোট: এখান থেকে কোনো deathLoop কল করা হবে না। update() ফাংশন এটি দেখবে।
 }
 
 function showGameOverMenu() { 
-    const dMsg = document.getElementById('deathMsg'); 
-    dMsg.style.display = 'none'; 
-    dMsg.classList.remove('slide-down-anim');
+    try {
+        // ১. আগের অ্যানিমেশন ও মেসেজ সরানো
+        const dMsg = document.getElementById('deathMsg'); 
+        if(dMsg) {
+            dMsg.style.display = 'none'; 
+            dMsg.classList.remove('slide-down-anim');
+        }
 
-    const logo = document.getElementById('gameLogo'); 
-    const note = document.getElementById('gameNote'); 
-    if(logo) logo.style.display = 'none'; // গেম ওভারে লোগোও হাইড থাকে
-    if(note) note.style.display = 'none';
+        const logo = document.getElementById('gameLogo'); 
+        const note = document.getElementById('gameNote'); 
+        if(logo) logo.style.display = 'none'; 
+        if(note) note.style.display = 'none';
 
-    const introVideo = document.getElementById('introVideo'); 
-    if(introVideo) { 
-        introVideo.currentTime = 0; 
-        introVideo.play().catch(()=>{}); 
+        // ২. ভিডিও প্লে করা (Safe Check)
+        const introVideo = document.getElementById('introVideo'); 
+        if(introVideo) { 
+            introVideo.currentTime = 0; 
+            // ভিডিও প্লে করতে গিয়ে এরর হলে (যেমন ইউজার ইন্টার‍্যাকশন পলিসি) সেটা ইগনোর করবে
+            introVideo.play().catch((e)=>{ console.log("Video Play Error (Ignored):", e); }); 
+        }
+        
+        // ৩. মেইন ওভারলে চালু করা
+        const ov = document.getElementById('overlay');
+        if(ov) {
+            ov.style.display = 'flex'; 
+            ov.classList.add('game-over-mode');
+        }
+        
+        // ৪. স্কোর দেখানো
+        const fPanel = document.getElementById('finalScorePanel');
+        if(fPanel) fPanel.style.display = 'block'; 
+        
+        const fScore = document.getElementById('finalScoreVal');
+        if(fScore) fScore.innerText = toBanglaNum(score) + " ৳";
+        
+        // ৫. বেস্ট স্কোর এবং কিং ডাটা (Safe Check)
+        let myBest = score;
+        if(currentPlayerData && currentPlayerData.highest) {
+            myBest = currentPlayerData.highest > score ? currentPlayerData.highest : score;
+        }
+        const pBest = document.getElementById('personalBestVal');
+        if(pBest) pBest.innerText = toBanglaNum(myBest) + " ৳";
+        
+        // ** King Data Safe Check (এখানেই আটকে যেত) **
+        let kingName = "লোড হচ্ছে...";
+        let kingScore = 0;
+        
+        // ডাটা চেক করে নেওয়া হচ্ছে
+        if (globalTopRank && globalTopRank.name) {
+            kingName = globalTopRank.name;
+            kingScore = globalTopRank.score;
+        }
+        
+        let kingText = `${kingName} (${toBanglaNum(kingScore)})`; 
+        const gKing = document.getElementById('globalKingVal');
+        if(gKing) gKing.innerText = kingText;
+        
+        // ৬. বাকি বাটন ও টেক্সট হ্যান্ডলিং
+        const tMsg = document.getElementById('titleMsg');
+        if(tMsg) {
+            tMsg.innerText = ""; 
+            tMsg.style.color = "#FF7043"; 
+            tMsg.style.display = 'block';
+        }
+
+        const nameDisp = document.getElementById('showPlayerName');
+        if(nameDisp) nameDisp.style.display = 'none';
+
+        const playBtn = document.getElementById('mainPlayBtn');
+        if(playBtn) playBtn.innerText = "PLAY AGAIN"; 
+        
+        const wMsg = document.getElementById('welcomeUserMsg'); 
+        if(wMsg) wMsg.style.display = 'none'; 
+        
+        const hBtn = document.getElementById('homeBtn');
+        if (hBtn) hBtn.style.display = 'block'; 
+
+    } catch (err) {
+        console.error("Menu Error Caught:", err);
+        // যদি কোনো কারণে উপরের কোড ফেইল করে, তবুও যাতে অন্তত মেনু আসে
+        document.getElementById('overlay').style.display = 'flex';
+        document.getElementById('finalScorePanel').style.display = 'block';
     }
-    
-    overlay.style.display = 'flex'; 
-    overlay.classList.add('game-over-mode'); 
-    
-    document.getElementById('finalScorePanel').style.display = 'block'; 
-    document.getElementById('finalScoreVal').innerText = toBanglaNum(score) + " ৳";
-    
-    let myBest = currentPlayerData ? currentPlayerData.highest : score; 
-    document.getElementById('personalBestVal').innerText = toBanglaNum(myBest) + " ৳";
-    
-    let kingText = `${globalTopRank.name} (${toBanglaNum(globalTopRank.score)})`; 
-    document.getElementById('globalKingVal').innerText = kingText;
-    
-    document.getElementById('titleMsg').innerText = ""; 
-    document.getElementById('titleMsg').style.color = "#FF7043"; 
-    document.getElementById('titleMsg').style.display = 'block';
-
-    // 👇 এই অংশটুকু চেঞ্জ করা হয়েছে 👇
-    // গেম ওভার হলে নাম দেখানোর দরকার নেই, তাই হাইড করে দিচ্ছি
-    const nameDisp = document.getElementById('showPlayerName');
-    if(nameDisp) {
-        nameDisp.style.display = 'none';
-    }
-
-    document.getElementById('mainPlayBtn').innerText = "PLAY AGAIN"; 
-    
-    const welcomeMsg = document.getElementById('welcomeUserMsg'); 
-    if(welcomeMsg) welcomeMsg.style.display = 'none'; 
-    
-    const homeBtn = document.getElementById('homeBtn');
-    if (homeBtn) homeBtn.style.display = 'block'; 
 }
-
 function winGame() { gameRunning = false; document.getElementById('overlay').style.display = 'flex'; document.getElementById('titleMsg').innerText = "অভিনন্দন!"; document.getElementById('titleMsg').style.color = "#00E676"; }
 function resetGame() { 
     if(animationId) cancelAnimationFrame(animationId); fatSound.pause(); fatSound.currentTime = 0; pubgSound.pause(); pubgSound.currentTime = 0; isPubgPlaying = false; score = 0; gameSpeed = 4; frame = 0; items = []; obstacles = []; burgersEaten = 0; stateTimer = 0; pubgTimer = 0; currentState = STATE_MED_START; player.width = player.medWidth; player.y = 0; isDead = false; deathTimer = 0; gameRunning = true; 
+    
+    extraLives = 0; 
+    isInvincible = false;
+    document.getElementById('lifeCount').innerText = "০";
+
     document.getElementById('uiBar').style.opacity = '1'; document.getElementById('scoreDisp').innerText = "০"; hideWarning(); update(); 
 }
 
@@ -512,9 +816,7 @@ function toggleMute() {
     clearTimeout(muteTimer);
     muteTimer = setTimeout(() => { muteClickCount = 0; }, 2000);
     if (muteClickCount >= 6) {
-        let pass = prompt("Admin Password:");
-        if (pass === "nahiAdmin") { window.location.href = "admin.html"; } 
-        else { alert("ভুল পাসওয়ার্ড! 😡"); }
+        window.location.href = "admin.html";
         muteClickCount = 0;
     }
 }

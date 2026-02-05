@@ -15,10 +15,11 @@
         <div class="ui-box">
             স্কোর
             <span id="scoreDisp" class="ui-val">০</span>
+            <span style="font-size: 12px; color: #b7a9a9; display: block;">টার্গেট: ৩কোটি </span>
         </div>
     
         <div class="ui-box">
-            বেস্ট
+            আমার বেস্ট
             <span id="myBestDisp" class="ui-val">০</span>
         </div>
     
@@ -31,13 +32,17 @@
             বার্গার
             <span id="burgerCount" class="ui-val">০</span>
         </div>
+
+        <div class="ui-box">
+            ❤️ লাইফ
+            <span id="lifeCount" class="ui-val" style="color: #FF5252;">০</span>
+        </div>
     </div>
     
     <div id="deathMsg">
         <span class="death-label">আপনি এখন মাত্র</span>
         <span id="deathScoreVal">০</span>
         <span class="death-label">টাকা মেরেছেন!</span>
-        
     </div>
 
     <div id="centerAnim"></div>
@@ -97,7 +102,8 @@
     <div id="nameModal" class="modal">
         <div class="modal-content">
             <h2>আপনার নাম দিন</h2>
-            <input type="text" id="playerNameInput" placeholder="নাম লিখুন(ENGLISH)">
+            <input type="text" id="playerNameInput" maxlength="6" placeholder="নাম লিখুন(ENGLISH)">
+            <p style="font-size: 12px; color: #aaa;">সর্বোচ্চ ৬ অক্ষর</p>
             <p id="nameError" style="color: #FF5252; display: none;"></p>
             <button onclick="submitName()">সেভ করুন</button>
         </div>
@@ -113,8 +119,15 @@
             <button class="close-btn" onclick="closeModal('leaderboardModal')">বন্ধ করুন</button>
         </div>
     </div>
+    <div id="redAlertModal">
+        <div class="red-alert-box">
+            <span class="red-alert-icon">⚠️</span>
+            <h2 class="red-alert-title">ADMIN ALERT</h2>
+            <p id="redAlertText" class="red-alert-msg"></p>
+            <button class="red-alert-btn" onclick="closeRedAlert()">OK</button>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
-
 </html>
