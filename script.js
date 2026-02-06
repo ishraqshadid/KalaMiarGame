@@ -263,51 +263,74 @@ function submitName() {
     
     document.getElementById('playerNameInput').value = input;
 
-    // ৬ ক্যারেক্টার হার্ড লিমিট
-    if(input.length > 6) { showNameError("নাম সর্বোচ্চ ৬ অক্ষরের হতে হবে!"); return; }
+    // ** পরিবর্তন ১: প্রাথমিক লিমিট ৬ থেকে বাড়িয়ে ৯ করা হলো **
+    if(input.length > 9) { showNameError("নাম সর্বোচ্চ ৯ অক্ষরের হতে হবে!"); return; }
 
     const submitBtn = document.querySelector('#nameModal button');
     const errorMsg = document.getElementById('nameError');
     const originalBtnText = "সাবমিট";
     errorMsg.style.display = 'none';
 
-    // লোকাল গালি চেক
+    // লোকাল গালি এবং বেস নেম চেক (সংখ্যা ছাড়া নাম ৩-৬ অক্ষরের হতে হবে)
+    // উদাহরণ: "Sujon123" দিলে 'checkNameLocal' শুধু "Sujon" অংশ চেক করবে, তাই এটা নিয়ে সমস্যা নেই।
     const localCheck = checkNameLocal(input, []);
     if (!localCheck.valid) { showNameError(localCheck.msg); return; }
 
     submitBtn.innerText = "চেক করা হচ্ছে...";
     submitBtn.disabled = true;
 
-    // ** ২. ডুপ্লিকেট চেকার **
+    // ** ২. ডুপ্লিকেট এবং লজিক্যাল লেন্থ চেকার **
     db.ref('users').once('value').then((snapshot) => {
         let nameTaken = false;
         let existingName = "";
+        let usersData = snapshot.val() || {};
+        const keys = Object.keys(usersData);
 
-        if (snapshot.exists()) {
-            const users = snapshot.val();
-            const keys = Object.keys(users);
-            
-            for (let i = 0; i < keys.length; i++) {
-                if (keys[i].toLowerCase() === input.toLowerCase()) {
-                    nameTaken = true;
-                    existingName = keys[i]; 
-                    break;
-                }
+        // হুবহু এই নাম আছে কিনা চেক করা
+        for (let i = 0; i < keys.length; i++) {
+            if (keys[i].toLowerCase() === input.toLowerCase()) {
+                nameTaken = true;
+                existingName = keys[i]; 
+                break;
             }
         }
 
         if (nameTaken) {
-            const hasNumber = /[0-9]+$/.test(input);
-            if (!hasNumber) {
-                showNameError(`'${existingName}' নামটি ইতিমধ্যে আছে! নামের শেষে সংখ্যা দিন।`);
-                resetBtn();
-            } else {
-                showNameError("এই নাম এবং সংখ্যাও ব্যবহার হয়েছে, অন্য সংখ্যা দিন।");
-                resetBtn();
-            }
+            // যদি নাম হুবহু মিলে যায়
+            showNameError(`'${existingName}' নামটি ইতিমধ্যে আছে! নামের শেষে সংখ্যা দিন।`);
+            resetBtn();
         } else {
-            // নাম ইউনিক, সেভ করা হচ্ছে
-            saveUserAndStart(input);
+            // ** পরিবর্তন ২: কন্ডিশনাল লেন্থ চেক **
+            
+            // যদি নাম ৬ অক্ষরের মধ্যে হয়, তাহলে সরাসরি সেভ
+            if (input.length <= 6) {
+                saveUserAndStart(input);
+            } 
+            // যদি নাম ৬ অক্ষরের বেশি হয় (৭-৯), তখন চেক করব মূল নামটা দখল হয়েছে কিনা
+            else {
+                // নামের অক্ষর অংশ বের করা (যেমন: Sujon12 থেকে Sujon)
+                let baseMatch = input.match(/^([a-zA-Z]+)/);
+                let baseName = baseMatch ? baseMatch[0] : input;
+                
+                let baseNameTaken = false;
+                
+                // চেক করি মূল নামটা (যেমন Sujon) কেউ নিয়েছে কিনা
+                for (let i = 0; i < keys.length; i++) {
+                    if (keys[i].toLowerCase() === baseName.toLowerCase()) {
+                        baseNameTaken = true;
+                        break;
+                    }
+                }
+
+                if (baseNameTaken) {
+                    // মূল নামটা কেউ নিয়ে নিয়েছে, তাই এই ইউজারকে সংখ্যা বসিয়ে নাম বড় করার সুযোগ দেওয়া হলো
+                    saveUserAndStart(input);
+                } else {
+                    // মূল নামটা খালি আছে, তাই ইউজারকে অযথা বড় নাম দিতে দেওয়া হবে না
+                    showNameError(`'${baseName}' নামটি খালি আছে! দয়া করে শুধু '${baseName}' ব্যবহার করুন (৬ অক্ষরের বেশি গ্রহণযোগ্য নয়)।`);
+                    resetBtn();
+                }
+            }
         }
 
     }).catch((error) => { 
@@ -317,8 +340,6 @@ function submitName() {
     });
 
     function saveUserAndStart(validName) {
-        // ** FIX: নতুন ইউজার ঢোকার সময় আগের বাসি (Stale) অ্যালার্ট মুছে ফেলা **
-        // এতে করে আগের কারো রিনেম অ্যালার্ট নতুন ইউজারের ঘাড়ে চাপবে না
         db.ref('alerts/' + validName).remove(); 
         db.ref('kick_messages/' + validName).remove();
 
