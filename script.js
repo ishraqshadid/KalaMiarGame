@@ -258,12 +258,10 @@ function submitName() {
     
     if(!rawInput) return;
 
-    // ১. নাম অটো ফরম্যাট (প্রথম অক্ষর বড়, বাকি সব ছোট)
     const input = rawInput.charAt(0).toUpperCase() + rawInput.slice(1).toLowerCase();
     
     document.getElementById('playerNameInput').value = input;
 
-    // ** পরিবর্তন ১: প্রাথমিক লিমিট ৬ থেকে বাড়িয়ে ৯ করা হলো **
     if(input.length > 9) { showNameError("নাম সর্বোচ্চ ৯ অক্ষরের হতে হবে!"); return; }
 
     const submitBtn = document.querySelector('#nameModal button');
@@ -271,22 +269,18 @@ function submitName() {
     const originalBtnText = "সাবমিট";
     errorMsg.style.display = 'none';
 
-    // লোকাল গালি এবং বেস নেম চেক (সংখ্যা ছাড়া নাম ৩-৬ অক্ষরের হতে হবে)
-    // উদাহরণ: "Sujon123" দিলে 'checkNameLocal' শুধু "Sujon" অংশ চেক করবে, তাই এটা নিয়ে সমস্যা নেই।
     const localCheck = checkNameLocal(input, []);
     if (!localCheck.valid) { showNameError(localCheck.msg); return; }
 
     submitBtn.innerText = "চেক করা হচ্ছে...";
     submitBtn.disabled = true;
 
-    // ** ২. ডুপ্লিকেট এবং লজিক্যাল লেন্থ চেকার **
     db.ref('users').once('value').then((snapshot) => {
         let nameTaken = false;
         let existingName = "";
         let usersData = snapshot.val() || {};
         const keys = Object.keys(usersData);
 
-        // হুবহু এই নাম আছে কিনা চেক করা
         for (let i = 0; i < keys.length; i++) {
             if (keys[i].toLowerCase() === input.toLowerCase()) {
                 nameTaken = true;
@@ -296,25 +290,19 @@ function submitName() {
         }
 
         if (nameTaken) {
-            // যদি নাম হুবহু মিলে যায়
             showNameError(`'${existingName}' নামটি ইতিমধ্যে আছে! নামের শেষে সংখ্যা দিন।`);
             resetBtn();
         } else {
-            // ** পরিবর্তন ২: কন্ডিশনাল লেন্থ চেক **
-            
-            // যদি নাম ৬ অক্ষরের মধ্যে হয়, তাহলে সরাসরি সেভ
+
             if (input.length <= 6) {
                 saveUserAndStart(input);
             } 
-            // যদি নাম ৬ অক্ষরের বেশি হয় (৭-৯), তখন চেক করব মূল নামটা দখল হয়েছে কিনা
             else {
-                // নামের অক্ষর অংশ বের করা (যেমন: Sujon12 থেকে Sujon)
                 let baseMatch = input.match(/^([a-zA-Z]+)/);
                 let baseName = baseMatch ? baseMatch[0] : input;
                 
                 let baseNameTaken = false;
                 
-                // চেক করি মূল নামটা (যেমন Sujon) কেউ নিয়েছে কিনা
                 for (let i = 0; i < keys.length; i++) {
                     if (keys[i].toLowerCase() === baseName.toLowerCase()) {
                         baseNameTaken = true;
@@ -323,10 +311,8 @@ function submitName() {
                 }
 
                 if (baseNameTaken) {
-                    // মূল নামটা কেউ নিয়ে নিয়েছে, তাই এই ইউজারকে সংখ্যা বসিয়ে নাম বড় করার সুযোগ দেওয়া হলো
                     saveUserAndStart(input);
                 } else {
-                    // মূল নামটা খালি আছে, তাই ইউজারকে অযথা বড় নাম দিতে দেওয়া হবে না
                     showNameError(`'${baseName}' নামটি খালি আছে! দয়া করে শুধু '${baseName}' ব্যবহার করুন (৬ অক্ষরের বেশি গ্রহণযোগ্য নয়)।`);
                     resetBtn();
                 }
