@@ -40,6 +40,14 @@ const stoneSound = new Audio('stone_hit.mp3'); stoneSound.preload = 'auto';
 const fatSound = new Audio('fat.mp3'); fatSound.preload = 'auto'; fatSound.loop = true; fatSound.volume = 1.0;
 const pubgSound = new Audio('pubg.mp3'); pubgSound.preload = 'auto';
 
+// --- BACKGROUND MUSIC SETUP ---
+// এই মিউজিকটি অন্য সাউন্ডের সাথে বা PUBG সাউন্ডের সাথে বন্ধ হবে না।
+const bgMusic = new Audio('bg.mp3'); 
+bgMusic.preload = 'auto'; 
+bgMusic.loop = true; // লুপ হবে
+bgMusic.volume = 0.5; // ভলিউম ৫০% (যাতে অন্য সাউন্ড শোনা যায়, চাইলে বাড়াতে পারেন)
+// ------------------------------
+
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const centerAnim = document.getElementById("centerAnim");
@@ -79,6 +87,7 @@ window.onload = function() {
     
     fatSound.load();
     pubgSound.load();
+    bgMusic.load(); // লোড করা হলো
 
     const lastPlayer = localStorage.getItem('lc_last_player');
     if (lastPlayer) {
@@ -144,6 +153,7 @@ function showRedAlert(msg) {
     
     fatSound.pause();
     pubgSound.pause();
+    bgMusic.pause(); // গেম পজ হলে বিজি মিউজিক থামবে
     
     if(gameRunning) {
         cancelAnimationFrame(animationId);
@@ -169,6 +179,7 @@ function closeRedAlert() {
     }
     else if (gameRunning) {
         update(); 
+        bgMusic.play().catch(()=>{}); // আবার চালু হবে
         if(!isPubgPlaying && currentState === STATE_FAT_WAIT) {
             fatSound.play().catch(()=>{});
         }
@@ -465,8 +476,20 @@ function triggerCenterAnim(text, color) {
 function showWarning(text) { warningMsg.innerText = text; warningMsg.style.display = 'block'; }
 function hideWarning() { warningMsg.style.display = 'none'; }
 
-pubgSound.addEventListener('play', () => { isPubgPlaying = true; fatSound.volume = 0; });
-pubgSound.addEventListener('ended', () => { isPubgPlaying = false; if (currentState === STATE_FAT_WAIT) fatSound.volume = 1.0; });
+// --- SOUND LOGIC (KEY PART) ---
+// এখানে দেখুন: PUBG প্লে হলে শুধু fatSound (হাঁটার শব্দ) মিউট হচ্ছে।
+// bgMusic এর নাম এখানে নেই, তাই সেটি বাজতেই থাকবে।
+pubgSound.addEventListener('play', () => { 
+    isPubgPlaying = true; 
+    fatSound.volume = 0; // হাঁটার শব্দ বন্ধ
+    // bgMusic চলছে...
+});
+
+pubgSound.addEventListener('ended', () => { 
+    isPubgPlaying = false; 
+    if (currentState === STATE_FAT_WAIT) fatSound.volume = 1.0; 
+});
+// -----------------------
 
 const STATE_MED_START = 0; const STATE_THIN_WAIT = 1; const STATE_HUNTING = 2; const STATE_FAT_WAIT = 3; const STATE_MED_WAIT = 4;
 let currentState = STATE_MED_START; let stateTimer = 0; let burgersEaten = 0;
@@ -638,7 +661,8 @@ function handleDeath(type) {
     isDead = true; 
     
     fatSound.pause(); fatSound.currentTime = 0; 
-    pubgSound.pause(); pubgSound.currentTime = 0; 
+    pubgSound.pause(); pubgSound.currentTime = 0;
+    bgMusic.pause(); bgMusic.currentTime = 0; // গেম ওভার হলে মিউজিক থামবে
     isPubgPlaying = false; 
 
     deathTimer = 0; 
@@ -742,9 +766,19 @@ function showGameOverMenu() {
         document.getElementById('finalScorePanel').style.display = 'block';
     }
 }
-function winGame() { gameRunning = false; document.getElementById('overlay').style.display = 'flex'; document.getElementById('titleMsg').innerText = "অভিনন্দন!"; document.getElementById('titleMsg').style.color = "#00E676"; }
+function winGame() { gameRunning = false; bgMusic.pause(); document.getElementById('overlay').style.display = 'flex'; document.getElementById('titleMsg').innerText = "অভিনন্দন!"; document.getElementById('titleMsg').style.color = "#00E676"; }
 function resetGame() { 
-    if(animationId) cancelAnimationFrame(animationId); fatSound.pause(); fatSound.currentTime = 0; pubgSound.pause(); pubgSound.currentTime = 0; isPubgPlaying = false; score = 0; gameSpeed = 4; frame = 0; items = []; obstacles = []; burgersEaten = 0; stateTimer = 0; pubgTimer = 0; currentState = STATE_MED_START; player.width = player.medWidth; player.y = 0; isDead = false; deathTimer = 0; gameRunning = true; 
+    if(animationId) cancelAnimationFrame(animationId); 
+    
+    fatSound.pause(); fatSound.currentTime = 0; 
+    pubgSound.pause(); pubgSound.currentTime = 0; 
+    
+    // --- START BG MUSIC HERE ---
+    bgMusic.currentTime = 0;
+    bgMusic.play().catch(()=>{});
+    // ---------------------------
+
+    isPubgPlaying = false; score = 0; gameSpeed = 4; frame = 0; items = []; obstacles = []; burgersEaten = 0; stateTimer = 0; pubgTimer = 0; currentState = STATE_MED_START; player.width = player.medWidth; player.y = 0; isDead = false; deathTimer = 0; gameRunning = true; 
     
     extraLives = 0; 
     isInvincible = false;

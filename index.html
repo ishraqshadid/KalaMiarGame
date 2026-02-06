@@ -71,7 +71,26 @@
 
                  <h1 id="titleMsg"></h1>
                 
-                <p id="gameNote">NOTE:আউট হলে হবে না। বেশি বেশি বার্গার খেতে হবে। এর চেয়ে বেশি ফানি কিছু অ্যাড করার মত ছিলো না! ইঞ্জয়!!!</p>
+                 <p id="gameNote" style="display: flex; align-items: center; justify-content: center; gap: 10px; color: #fff;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <style>
+                            .rotate-svg {
+                                animation: rotate-animation 2s infinite ease-in-out;
+                                transform-origin: center;
+                            }
+                            @keyframes rotate-animation {
+                                0% { transform: rotate(0deg); }
+                                50% { transform: rotate(-90deg); }
+                                100% { transform: rotate(0deg); }
+                            }
+                        </style>
+                        <g class="rotate-svg">
+                            <rect x="5" y="3" width="14" height="18" rx="2" stroke="#FFD700" stroke-width="2" fill="none" />
+                            <path d="M11 18h2" stroke="#FFD700" stroke-width="2" stroke-linecap="round" />
+                        </g>
+                    </svg>
+                    <span><b>NOTE:</b> ভালো অভিজ্ঞতার জন্য মোবাইল রোটেট করে খেলুন। ১৪টা বার্গার = ১টা লাইফ।<br> ইঞ্জয়!!!</span>
+                </p>
                 
                 <div id="finalScorePanel">
                      <div class="score-row">
@@ -127,6 +146,14 @@
             <button class="red-alert-btn" onclick="closeRedAlert()">OK</button>
         </div>
     </div>
+    <p id="gameNote" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #FFD700;">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+            <path d="M12 18h.01"></path>
+            <path d="M17 2H7"></path>
+        </svg>
+        NOTE: ভালো অভিজ্ঞতার জন্য মোবাইল রোটেট করে খেলুন। আউট হওয়া যাবে না, বেশি বেশি বার্গার খেতে হবে। ইঞ্জয়!!!
+    </p>
 
     <script src="script.js"></script>
 </body>
