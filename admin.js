@@ -240,41 +240,45 @@ const SERVER_KEY = "985182093365";
 // --- OneSignal Config ---
 // আপনার স্ক্রিনশট থেকে পাওয়া সঠিক আইডি এবং কি
 // আপনার সঠিক আইডি এবং কি
-const ONESIGNAL_APP_ID = "178f14bc-2eef-4b63-97ba-f1bb9a2dc55b"; 
-const ONESIGNAL_API_KEY = "os_v2_app_c6hrjpbo55fwhf526g5zuloflonsvtitwmleccn5ibkueixn5sxeyllppctpmppltsge6nwvq5k5xo5ipai5mg7o6f3shfts7z7ntby"; 
+const ONESIGNAL_APP_ID = "178f14bc-2eef-4b63-97ba-f1bb9a2dc55b";
+const ONESIGNAL_API_KEY = "os_v2_app_c6hrjpbo55fwhf526g5zuloflonsvtitwmleccn5ibkueixn5sxeyllppctpmppltsge6nwvq5k5xo5ipai5mg7o6f3shfts7z7ntby";
 
 function sendGlobalNotification() {
     const messageText = prompt("সবাইকে কী মেসেজ পাঠাতে চান?");
     if (!messageText) return;
 
-    // ব্রাউজারের বাধা (CORS) কাটাতে প্রক্সি লিঙ্ক
-    const targetUrl = "https://onesignal.com/api/v1/notifications";
-    const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(targetUrl);
+    // ব্রাউজারের সিকিউরিটি (CORS) পার করার জন্য প্রক্সি
+    const url = "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://onesignal.com/api/v1/notifications");
 
-    fetch(proxyUrl, {
+    fetch(url, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Basic ' + ONESIGNAL_API_KEY // এখানে 'Basic ' শব্দটি যোগ করা হয়েছে
+            'Authorization': 'Basic ' + ONESIGNAL_API_KEY, // এখানে আপনার লম্বা কি-টি বসবে
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify({
             app_id: ONESIGNAL_APP_ID,
             included_segments: ['All'],
             contents: { en: messageText },
-            headings: { en: "Kala Mia Admin" }
+            headings: { en: "Kala Mia Admin" },
+            chrome_web_icon: "https://kalamiargame.firebaseapp.com/burger.webp"
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) throw new Error('Network response error');
+        return response.json();
+    })
     .then(data => {
-        if(data.id) {
+        // ওয়ান-সিগন্যাল কখনও কখনও ভুল দিলেও JSON পাঠায়, তাই এখানে চেক করছি
+        if(data && (data.id || data.recipients > 0)) {
             alert("মেসেজ সফলভাবে পাঠানো হয়েছে! 🎉");
         } else {
-            console.error("OneSignal Error:", data);
-            alert("ভুল: " + (data.errors ? data.errors[0] : "API Key চেক করুন"));
+            console.error("OneSignal Error Details:", data);
+            alert("সমস্যা: " + (data.errors ? data.errors[0] : "API Key ভুল!"));
         }
     })
     .catch(err => {
-        console.error("Fetch Error:", err);
-        alert("ইন্টারনেট সমস্যা বা API Key ব্লক!");
+        console.error("Final Error Log:", err);
+        alert("ইন্টারনেট সমস্যা বা API ব্লক! (F12 চেপে কনসোল দেখুন)");
     });
 }
