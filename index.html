@@ -11,22 +11,24 @@
     
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(function(OneSignal) {
-    OneSignal.init({
-      appId: "178f14bc-2eef-4b63-97ba-f1bb9a2dc55b",
-      safari_web_id: "web.onesignal.auto.xxxxx",
-      notifyButton: {
-        enable: true,
-      },
-      allowLocalhostAsSecureOrigin: true,
-    });
-
-    // প্লেয়ারদের ফোনে অটোমেটিক পারমিশন বক্স দেখানোর জন্য এই লাইনটি যোগ করুন
-    OneSignal.Notifications.requestPermission(); 
-  });
-</script>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "178f14bc-2eef-4b63-97ba-f1bb9a2dc55b",
+          notifyButton: {
+            enable: true,
+          },
+          allowLocalhostAsSecureOrigin: true,
+        });
+    
+        // নতুন ভার্সনে পারমিশন চাওয়ার সঠিক নিয়ম
+        if (!OneSignal.Notifications.permission) {
+            await OneSignal.Notifications.requestPermission();
+        }
+      });
+    </script>
 </head>
 <body>
     <div id="rotateWarning">
