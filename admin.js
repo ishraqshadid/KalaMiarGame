@@ -241,7 +241,7 @@ const SERVER_KEY = "985182093365";
 // আপনার স্ক্রিনশট থেকে পাওয়া সঠিক আইডি এবং কি
 // আপনার সঠিক আইডি এবং কি
 const ONESIGNAL_APP_ID = "178f14bc-2eef-4b63-97ba-f1bb9a2dc55b";
-const ONESIGNAL_API_KEY = "os_v2_app_c6hrjpbo55fwhf526g5zuloflonsvtitwmleccn5ibkueixn5sxeyllppctpmppltsge6nwvq5k5xo5ipai5mg7o6f3shfts7z7ntby";
+const ONESIGNAL_API_KEY = "nsvtitwmleccn5ibkueixn5sx";
 
 function sendGlobalNotification() {
     const messageText = prompt("সবাইকে কী মেসেজ পাঠাতে চান?");
