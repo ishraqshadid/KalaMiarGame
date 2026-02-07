@@ -235,45 +235,46 @@ function filterUsers() {
     const filtered = allUsersData.filter(u => u.name.toLowerCase().includes(query));
     renderList(filtered);
 }
-const SERVER_KEY = "985182093365"; 
 
 // --- OneSignal Config ---
 // আপনার স্ক্রিনশট থেকে পাওয়া সঠিক আইডি এবং কি
 // আপনার সঠিক আইডি এবং কি
 const ONESIGNAL_APP_ID = "178f14bc-2eef-4b63-97ba-f1bb9a2dc55b";
-const ONESIGNAL_API_KEY = "nsvtitwmleccn5ibkueixn5sx";
+const ONESIGNAL_API_KEY = "os_v2_app_c6hrjpbo55fwhf526g5zuloflpiszhwe6gyep4vf5vsfxe75q5ifuput7ltgtjzpniz32vwxnw7xainhfhqvqk4xaut5nwiz6hgfgpy"; // আপনার আসল লম্বা REST API Key
 
 function sendGlobalNotification() {
     const messageText = prompt("সবাইকে কী মেসেজ পাঠাতে চান?");
     if (!messageText) return;
 
-    // CORS block par hote eii proxy-ti babohar korun
-    const proxyUrl = "https://api.allorigins.win/get?url=";
-    const targetUrl = "https://onesignal.com/api/v1/notifications";
+    // CORS এরর এড়াতে নতুন প্রক্সি মেথড
+    const url = "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://onesignal.com/api/v1/notifications");
 
-    // OneSignal rigoest structure
-    const bodyData = {
-        app_id: ONESIGNAL_APP_ID,
-        included_segments: ['All'],
-        contents: { en: messageText },
-        headings: { en: "Kala Mia Admin" }
-    };
-
-    // Rigoest pathano hochche
-    fetch(proxyUrl + encodeURIComponent(targetUrl) + "&callback=?", {
-        method: 'POST',
+    fetch(url, {
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Basic ' + ONESIGNAL_API_KEY
+            "Content-Type": "application/json",
+            "Authorization": "Basic " + ONESIGNAL_API_KEY // 'Basic' এর পর স্পেস নিশ্চিত করুন
         },
-        body: JSON.stringify(bodyData)
+        body: JSON.stringify({
+            app_id: ONESIGNAL_APP_ID,
+            included_segments: ["All"],
+            contents: { en: messageText },
+            headings: { en: "Kala Mia Admin" }
+        })
     })
     .then(response => {
-        // Jodi direct fetch e o CORS shomoshsha thake, tobe browser theke sorasori OneSignal pathano kothin
-        alert("অনুরোধ পাঠানো হয়েছে! দয়া করে ওয়ান-সিগন্যাল ড্যাশবোর্ড চেক করুন।");
+        if (!response.ok) throw new Error("CORS or Auth Error");
+        return response.json();
+    })
+    .then(data => {
+        if (data.id || data.recipients > 0) {
+            alert("মেসেজ সফলভাবে পাঠানো হয়েছে! 🎉");
+        } else {
+            alert("ত্রুটি: " + JSON.stringify(data));
+        }
     })
     .catch(err => {
-        console.error("Error:", err);
-        alert("CORS ব্লকের কারণে ব্রাউজার থেকে পাঠানো যাচ্ছে না।");
+        console.error("Detailed Error:", err);
+        alert("ব্রাউজার সিকিউরিটির কারণে মেসেজ পাঠানো যায়নি। সরাসরি OneSignal ড্যাশবোর্ড থেকে পাঠান।");
     });
 }
