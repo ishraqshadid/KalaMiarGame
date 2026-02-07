@@ -65,11 +65,25 @@ function renderList(users) {
         div.className = 'user-row';
         
         let statusHtml = '<span style="color: gray; font-size: 12px;">Offline</span>';
-        if (u.lastSeen && (currentTime - u.lastSeen < 120000)) {
-             statusHtml = '<span style="color: #00E676; font-weight: bold; font-size: 12px;">● Online</span>';
-        } else if (u.lastSeen) {
-             const mins = Math.floor((currentTime - u.lastSeen) / 60000);
-             statusHtml = `<span style="color: orange; font-size: 12px;">Last seen: ${mins}m ago</span>`;
+        
+        if (u.lastSeen) {
+            const diff = currentTime - u.lastSeen;
+            // ২ মিনিটের কম হলে অনলাইন দেখাবে
+            if (diff < 120000) {
+                statusHtml = '<span style="color: #00E676; font-weight: bold; font-size: 12px;">● Online</span>';
+            } else {
+                // সময় ক্যালকুলেশন (মিনিট, ঘণ্টা, দিন)
+                let timeStr = "";
+                let minutes = Math.floor(diff / 60000);
+                let hours = Math.floor(minutes / 60);
+                let days = Math.floor(hours / 24);
+
+                if (days > 0) timeStr = `${days}d ago`;
+                else if (hours > 0) timeStr = `${hours}h ago`;
+                else timeStr = `${minutes}m ago`;
+
+                statusHtml = `<span style="color: orange; font-size: 12px;">Active: ${timeStr}</span>`;
+            }
         }
 
         div.innerHTML = `
@@ -87,7 +101,6 @@ function renderList(users) {
         listDiv.appendChild(div);
     });
 }
-
 function sendCustomAlert(name) {
     const msg = prompt(`'${name}' কে কি ওয়ার্নিং/মেসেজ দিতে চান?`);
     if(msg && msg.trim() !== "") {
@@ -115,9 +128,16 @@ function renameUser(oldName) {
             } else {
                 db.ref('users/' + oldName).once('value', (oldSnap) => {
                     let data = oldSnap.val();
-                    data.name = newName; 
                     
-                    db.ref('users/' + newName).set(data)
+                    // ডাটা কপি করার সময় নাম্বারে কনভার্ট করে নিচ্ছি
+                    let cleanData = {
+                        name: newName,
+                        total: Number(data.total || 0),
+                        highest: Number(data.highest || 0),
+                        lastSeen: data.lastSeen || Date.now()
+                    };
+                    
+                    db.ref('users/' + newName).set(cleanData)
                     .then(() => {
                         return db.ref('alerts/' + oldName).set({
                             message: `আপনার নাম পরিবর্তন করে '${newName}' করা হয়েছে!`,
@@ -131,21 +151,24 @@ function renameUser(oldName) {
                     })
                     .then(() => {
                         alert(`নাম পরিবর্তন সফল! (${oldName} -> ${newName})`);
-                        recalculateKing();
+                        // পুরনো নাম ডিলিট হওয়ার একটু পর কিং চেক করবে
+                        setTimeout(recalculateKing, 1000); 
                     });
                 });
             }
         });
     }
 }
-
 function editUser(name, oldTotal, oldHighest) {
     let newTotal = prompt(`'${name}' এর নতুন Total Score দিন:`, oldTotal);
+    
     if (newTotal !== null && newTotal.trim() !== "") {
         let newHighest = prompt(`'${name}' এর নতুন Highest Score দিন:`, oldHighest);
+        
         if (newHighest !== null && newHighest.trim() !== "") {
-            const t = parseInt(newTotal);
-            const h = parseInt(newHighest);
+            // জোর করে Number এ কনভার্ট করা হচ্ছে
+            const t = Number(newTotal);
+            const h = Number(newHighest);
 
             if (!isNaN(t) && !isNaN(h)) {
                 db.ref('users/' + name).update({
@@ -154,11 +177,12 @@ function editUser(name, oldTotal, oldHighest) {
                 })
                 .then(() => {
                     alert("আপডেট হয়েছে! ✅");
-                    recalculateKing();
+                    // ১ সেকেন্ড পর ক্যালকুলেট করবে যাতে ডাটা সেভ হওয়ার সময় পায়
+                    setTimeout(recalculateKing, 500); 
                 })
                 .catch((err) => alert("সমস্যা: " + err.message));
             } else {
-                alert("সংখ্যা দিন!");
+                alert("দয়া করে ইংরেজি সংখ্যা দিন!");
             }
         }
     }
@@ -188,13 +212,17 @@ function recalculateKing() {
             const users = snapshot.val();
             Object.keys(users).forEach(key => {
                 const u = users[key];
-                if (u.highest > maxScore) {
-                    maxScore = u.highest;
+                // এখানে ডাটা নাম্বারে কনভার্ট করা হচ্ছে যাতে ভুল না হয়
+                let h = Number(u.highest || 0); 
+                
+                if (h > maxScore) {
+                    maxScore = h;
                     kingName = u.name;
                 }
             });
         }
         
+        // King আপডেট করা হচ্ছে
         db.ref('globalTopRank').set({
             name: kingName,
             score: maxScore
@@ -206,4 +234,50 @@ function filterUsers() {
     const query = document.getElementById('searchBox').value.toLowerCase();
     const filtered = allUsersData.filter(u => u.name.toLowerCase().includes(query));
     renderList(filtered);
+}
+const SERVER_KEY = "985182093365"; 
+
+// --- OneSignal Config ---
+// আপনার স্ক্রিনশট থেকে পাওয়া সঠিক আইডি এবং কি
+const ONESIGNAL_APP_ID = "178f14bc-2eef-4b63-97ba-f1bb9a2dc55b"; 
+const ONESIGNAL_API_KEY = "nsvtitwmleccn5ibkueixn5sx"; 
+
+function sendGlobalNotification() {
+    const messageText = prompt("সবাইকে কী মেসেজ পাঠাতে চান?");
+    if (!messageText) return;
+
+    // ব্রাউজারের বাধা (CORS) এড়াতে প্রক্সি ব্যবহার করা হয়েছে
+    const proxyUrl = "https://corsproxy.io/?";
+    const targetUrl = "https://onesignal.com/api/v1/notifications";
+
+    const options = {
+        method: 'POST',
+        headers: {
+            'accept': 'application/json',
+            'Authorization': 'Basic ' + ONESIGNAL_API_KEY,
+            'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+            app_id: ONESIGNAL_APP_ID,
+            included_segments: ['All'],
+            contents: { en: messageText },
+            headings: { en: "Kala Mia Admin" },
+            chrome_web_icon: "https://kalamiargame.firebaseapp.com/burger.webp"
+        })
+    };
+
+    fetch(proxyUrl + targetUrl, options)
+    .then(response => response.json())
+    .then(data => {
+        if(data.id) {
+            alert("মেসেজ সফলভাবে পাঠানো হয়েছে! 🎉");
+        } else {
+            console.log("OneSignal Error:", data); // কনসোলে বিস্তারিত দেখাবে
+            alert("পাঠাতে সমস্যা হয়েছে! কনসোল (F12) চেক করুন।");
+        }
+    })
+    .catch(err => {
+        console.error("Fetch Error:", err);
+        alert("ইন্টারনেট সমস্যা বা API Key ব্লক করা হয়েছে!");
+    });
 }

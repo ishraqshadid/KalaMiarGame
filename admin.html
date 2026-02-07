@@ -27,6 +27,9 @@
         <h2 style="text-align: center;">ড্যাশবোর্ড (মোট: <span id="totalUserCount">0</span>)</h2>
         <div style="text-align: center; margin-bottom: 20px;">
             <input type="text" id="searchBox" onkeyup="filterUsers()" placeholder="নাম দিয়ে খুঁজুন..." style="width: 60%;">
+            <div style="text-align: center; margin: 15px;">
+                <button onclick="sendGlobalNotification()" style="background: #E91E63; color: white;">📢 সবাইকে মেসেজ পাঠান</button>
+            </div>
             <button onclick="location.href='index.html'">গেমে ফিরুন</button>
         </div>
         <div id="userList"></div>

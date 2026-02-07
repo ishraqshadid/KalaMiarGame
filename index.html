@@ -8,8 +8,32 @@
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(function(OneSignal) {
+        OneSignal.init({
+          appId: "178f14bc-2eef-4b63-97ba-f1bb9a2dc55b", // OneSignal থেকে পাওয়া App ID এখানে বসাবেন
+          safari_web_id: "web.onesignal.auto.xxxxx",
+          notifyButton: {
+            enable: true,
+          },
+          allowLocalhostAsSecureOrigin: true,
+        });
+      });
+    </script>
 </head>
 <body>
+    <div id="rotateWarning">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a9 9 0 1 0 9 9 9 9 0 1 0-9-9z"></path>
+            <path d="M12 7v5l3 3"></path>
+        </svg>
+        <h2>দয়া করে ফোনটি ঘোরান</h2>
+        <p>ভালোভাবে খেলার জন্য Landscape Mode প্রয়োজন।</p>
+        <p>🔄</p>
+    </div>
 
     <div id="uiBar">
         <div class="ui-box">

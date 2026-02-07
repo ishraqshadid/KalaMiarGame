@@ -376,15 +376,29 @@ function listenToTopRank() {
     });
 }
 
+
 function updateDataOnDeath() {
     if (!currentPlayerName) return;
-    currentPlayerData.total += score;
-    if (score > currentPlayerData.highest) { currentPlayerData.highest = score; }
+
+  
+    let currentTotal = Number(currentPlayerData.total || 0);
+    let currentHighest = Number(currentPlayerData.highest || 0);
+
+
+    currentPlayerData.total = currentTotal + score;
+
+
+    if (score > currentHighest) { 
+        currentPlayerData.highest = score; 
+    }
+
     const updates = {};
     updates['/users/' + currentPlayerName] = currentPlayerData;
+
     if (score > globalTopRank.score) { 
         updates['/globalTopRank'] = { name: currentPlayerName, score: score }; 
     }
+
     db.ref().update(updates);
 }
 
@@ -402,14 +416,34 @@ function showLeaderboard() {
         if (snapshot.exists()) {
             const usersObj = snapshot.val();
             let playersArray = [];
+            const currentTime = Date.now();
 
             Object.keys(usersObj).forEach(key => {
                 const u = usersObj[key];
                 if (u && u.name) {
+                    // Time calculation logic for Leaderboard
+                    let timeStr = "";
+                    if (u.lastSeen) {
+                        let diff = currentTime - u.lastSeen;
+                        if (diff < 120000) timeStr = "Online"; // < 2 min
+                        else {
+                            let mins = Math.floor(diff / 60000);
+                            let hrs = Math.floor(mins / 60);
+                            let days = Math.floor(hrs / 24);
+                            
+                            if (days > 0) timeStr = `${days}d ago`;
+                            else if (hrs > 0) timeStr = `${hrs}h ago`;
+                            else timeStr = `${mins}m ago`;
+                        }
+                    } else {
+                        timeStr = "Offline";
+                    }
+
                     playersArray.push({
                         name: u.name,
                         total: u.total || 0, 
-                        highest: u.highest || 0
+                        highest: u.highest || 0,
+                        lastSeenStr: timeStr
                     });
                 }
             });
@@ -418,7 +452,7 @@ function showLeaderboard() {
 
             let grandTotal = 0;
             playersArray.forEach(p => grandTotal += p.total);
-            totalMsg.innerHTML = `সবাই মিলে এই পর্যন্ত মোট <span style="color: #FFD700; font-weight:bold;">${toBanglaNum(grandTotal)}</span> টাকা মেরেছেন!`;
+            totalMsg.innerHTML = `সবাই মিলে মোট <span style="color: #FFD700; font-weight:bold;">${toBanglaNum(grandTotal)}</span> টাকা মেরেছেন!`;
 
             listDiv.innerHTML = "";
             
@@ -428,12 +462,20 @@ function showLeaderboard() {
                 
                 if (p.name === currentPlayerName) item.classList.add('highlight');
                 
+                // Color for Online status
+                let timeColor = p.lastSeenStr === "Online" ? "#00E676" : "#888";
+
                 item.innerHTML = `
-                    <span style="display:flex; gap:10px;">
-                        <span style="color:#aaa; width:25px;">#${toBanglaNum(index+1)}</span> 
-                        <span>${p.name}</span>
-                    </span> 
-                    <span>${toBanglaNum(p.total)} ৳</span>
+                    <div style="display:flex; flex-direction:column; width: 60%;">
+                        <span style="display:flex; align-items:center; gap:8px;">
+                            <span style="color:#aaa; font-size:12px;">#${toBanglaNum(index+1)}</span> 
+                            <span style="font-weight:bold;">${p.name}</span>
+                        </span>
+                        <span style="font-size: 10px; color: ${timeColor}; margin-left: 20px;">
+                           ${p.lastSeenStr === "Online" ? "● " : ""}${p.lastSeenStr}
+                        </span>
+                    </div> 
+                    <span style="width:40%; text-align:right;">${toBanglaNum(p.total)} ৳</span>
                 `;
                 listDiv.appendChild(item);
             });
@@ -444,7 +486,7 @@ function showLeaderboard() {
         }
     }).catch((error) => { 
         console.error(error);
-        listDiv.innerHTML = "<p style='text-align:center; color:#FF5252;'>ডাটা লোড করতে সমস্যা হয়েছে! ইন্টারনেট চেক করুন।</p>"; 
+        listDiv.innerHTML = "<p style='text-align:center; color:#FF5252;'>ডাটা লোড করতে সমস্যা হয়েছে!</p>"; 
     });
 }
 function openNameInput() { document.getElementById('nameModal').style.display = 'flex'; document.getElementById('playerNameInput').focus(); }
@@ -503,10 +545,21 @@ canvas.addEventListener('mousedown', jump);
 function startGame() {
     const introVideo = document.getElementById('introVideo');
     if(introVideo) introVideo.pause();
-    overlay.style.display = 'none'; overlay.classList.remove('game-over-mode');
+    overlay.style.display = 'none'; 
+    overlay.classList.remove('game-over-mode');
     finalScorePanel.style.display = 'none'; uiBar.style.opacity = '1';
     
-    if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen().catch(()=>{}); }
+    // --- LANDSCAPE LOCK LOGIC ---
+    if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().then(() => {
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock("landscape").catch((err) => {
+                    console.log("Landscape lock failed (device may not support):", err);
+                });
+            }
+        }).catch(()=>{});
+    }
+    // ----------------------------
     fatSound.play().then(() => fatSound.pause()).catch(()=>{});
     resetGame();
 }
@@ -804,3 +857,4 @@ function toggleMute() {
     }
 }
 function goToHome() { window.location.reload(); }
+

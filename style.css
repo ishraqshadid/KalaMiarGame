@@ -238,3 +238,29 @@ button {
     .rank-item { padding: 4px 10px; font-size: 12px; min-height: 25px; }
     .close-btn { padding: 5px 15px; font-size: 12px; margin-top: 5px; }
 }
+
+/* Portrait Mode Warning */
+/* Rotate Warning Design */
+/* Rotate Warning Design */
+#rotateWarning {
+    display: none; /* ডিফল্টভাবে লুকানো থাকবে */
+    position: fixed;
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%;
+    background-color: black; /* পুরো স্ক্রিন কালো হবে */
+    color: white;
+    z-index: 999999; /* সবার উপরে থাকার জন্য */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+/* শুধুমাত্র যখন গেম চলবে এবং ফোন খাড়া (Portrait) থাকবে */
+@media screen and (orientation: portrait) {
+    body.game-running #rotateWarning {
+        display: flex !important; /* জোর করে শো করাবে */
+    }
+}
