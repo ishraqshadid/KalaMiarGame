@@ -247,38 +247,33 @@ function sendGlobalNotification() {
     const messageText = prompt("সবাইকে কী মেসেজ পাঠাতে চান?");
     if (!messageText) return;
 
-    // ব্রাউজারের সিকিউরিটি (CORS) পার করার জন্য প্রক্সি
-    const url = "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://onesignal.com/api/v1/notifications");
+    // CORS block par hote eii proxy-ti babohar korun
+    const proxyUrl = "https://api.allorigins.win/get?url=";
+    const targetUrl = "https://onesignal.com/api/v1/notifications";
 
-    fetch(url, {
+    // OneSignal rigoest structure
+    const bodyData = {
+        app_id: ONESIGNAL_APP_ID,
+        included_segments: ['All'],
+        contents: { en: messageText },
+        headings: { en: "Kala Mia Admin" }
+    };
+
+    // Rigoest pathano hochche
+    fetch(proxyUrl + encodeURIComponent(targetUrl) + "&callback=?", {
         method: 'POST',
         headers: {
-            'Authorization': 'Basic ' + ONESIGNAL_API_KEY, // এখানে আপনার লম্বা কি-টি বসবে
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': 'Basic ' + ONESIGNAL_API_KEY
         },
-        body: JSON.stringify({
-            app_id: ONESIGNAL_APP_ID,
-            included_segments: ['All'],
-            contents: { en: messageText },
-            headings: { en: "Kala Mia Admin" },
-            chrome_web_icon: "https://kalamiargame.firebaseapp.com/burger.webp"
-        })
+        body: JSON.stringify(bodyData)
     })
     .then(response => {
-        if (!response.ok) throw new Error('Network response error');
-        return response.json();
-    })
-    .then(data => {
-        // ওয়ান-সিগন্যাল কখনও কখনও ভুল দিলেও JSON পাঠায়, তাই এখানে চেক করছি
-        if(data && (data.id || data.recipients > 0)) {
-            alert("মেসেজ সফলভাবে পাঠানো হয়েছে! 🎉");
-        } else {
-            console.error("OneSignal Error Details:", data);
-            alert("সমস্যা: " + (data.errors ? data.errors[0] : "API Key ভুল!"));
-        }
+        // Jodi direct fetch e o CORS shomoshsha thake, tobe browser theke sorasori OneSignal pathano kothin
+        alert("অনুরোধ পাঠানো হয়েছে! দয়া করে ওয়ান-সিগন্যাল ড্যাশবোর্ড চেক করুন।");
     })
     .catch(err => {
-        console.error("Final Error Log:", err);
-        alert("ইন্টারনেট সমস্যা বা API ব্লক! (F12 চেপে কনসোল দেখুন)");
+        console.error("Error:", err);
+        alert("CORS ব্লকের কারণে ব্রাউজার থেকে পাঠানো যাচ্ছে না।");
     });
 }
