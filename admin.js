@@ -239,45 +239,42 @@ const SERVER_KEY = "985182093365";
 
 // --- OneSignal Config ---
 // আপনার স্ক্রিনশট থেকে পাওয়া সঠিক আইডি এবং কি
-const ONESIGNAL_APP_ID = "178f14bc-2eef-4b63-97ba-f1bb9a2dc55b"; 
-const ONESIGNAL_API_KEY = "nsvtitwmleccn5ibkueixn5sx"; 
+const ONESIGNAL_APP_ID = "178f14bc-2eef-4b63-97ba-f1bb9a2dc55b";
+const ONESIGNAL_API_KEY = "nsvtitwmleccn5ibkueixn5sx";
 
 function sendGlobalNotification() {
     const messageText = prompt("সবাইকে কী মেসেজ পাঠাতে চান?");
     if (!messageText) return;
 
-    // ব্রাউজারের বাধা (CORS) এড়াতে প্রক্সি ব্যবহার করা হয়েছে
-    const proxyUrl = "https://corsproxy.io/?";
-    const targetUrl = "https://onesignal.com/api/v1/notifications";
+    // নতুন প্রক্সি লিঙ্ক (এটি বেশি শক্তিশালী)
+    const url = "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://onesignal.com/api/v1/notifications");
 
-    const options = {
+    fetch(url, {
         method: 'POST',
         headers: {
-            'accept': 'application/json',
             'Authorization': 'Basic ' + ONESIGNAL_API_KEY,
-            'content-type': 'application/json'
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify({
             app_id: ONESIGNAL_APP_ID,
             included_segments: ['All'],
             contents: { en: messageText },
-            headings: { en: "Kala Mia Admin" },
-            chrome_web_icon: "https://kalamiargame.firebaseapp.com/burger.webp"
+            headings: { en: "Kala Mia Admin" }
         })
-    };
-
-    fetch(proxyUrl + targetUrl, options)
-    .then(response => response.json())
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.json();
+    })
     .then(data => {
         if(data.id) {
             alert("মেসেজ সফলভাবে পাঠানো হয়েছে! 🎉");
         } else {
-            console.log("OneSignal Error:", data); // কনসোলে বিস্তারিত দেখাবে
-            alert("পাঠাতে সমস্যা হয়েছে! কনসোল (F12) চেক করুন।");
+            alert("ভুল: " + JSON.stringify(data));
         }
     })
     .catch(err => {
-        console.error("Fetch Error:", err);
-        alert("ইন্টারনেট সমস্যা বা API Key ব্লক করা হয়েছে!");
+        console.error("Error:", err);
+        alert("এখনো কাজ করছে না! ব্রাউজারের VPN বন্ধ করে ট্রাই করুন।");
     });
 }
